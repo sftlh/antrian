@@ -1,0 +1,4 @@
+docker init -> untuk initial pertama kali
+docker image build -t namaaplikasi:latest .
+docker container run -p 3000:3000 dashmad:latest
+docker-compose up -d --build

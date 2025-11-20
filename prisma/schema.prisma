@@ -1,0 +1,166 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  RECEPTIONIST
+  HELPDESK
+  TPT
+  KEPALA_SEKSI
+}
+
+enum ServiceType {
+  HELPDESK
+  TPT
+  BOTH
+}
+
+enum ServiceOrder {
+  HELPDESK_FIRST
+  TPT_FIRST
+}
+
+enum ServiceCategory {
+  HELPDESK
+  E_FILING
+  E_BILLING
+  SPT_GUIDANCE
+  SYSTEM_ACCESS
+  DOCUMENT_UPLOAD
+  PAYMENT_ISSUES
+  REGISTRATION
+  VERIFICATION
+  OTHER
+}
+
+enum PriorityLevel {
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum QueueStatus {
+  WAITING
+  CALLED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ESCALATED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String?
+  password  String
+  name      String
+  role      UserRole
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  calledQueues Queue[] @relation("CalledByUser")
+  escalatedQueues Queue[] @relation("EscalatedToUser")
+
+  @@map("users")
+}
+
+model Customer {
+  id           String           @id @default(cuid())
+  npwp         String
+  name         String
+  interests    String?
+  phone        String?
+  email        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  
+  queues       Queue[]
+  
+  @@map("customers")
+}
+
+model Queue {
+  id               String         @id @default(cuid())
+  queueNumber      String
+  serviceType      ServiceType
+  serviceCategory  ServiceCategory?
+  priorityLevel    PriorityLevel  @default(NORMAL)
+  status           QueueStatus    @default(WAITING)
+  customerId       String
+  calledBy         String?
+  calledAt         DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  serviceDuration  Int? // in minutes
+  notes            String?
+  internalNotes    String? // for technician communication
+  rating           Int? // 1-5 star rating
+  feedback         String? // customer feedback
+  neatnessRating   Int? // 1-5 star rating for employee neatness
+  materialMasteryRating Int? // 1-5 star rating for material mastery
+  communicationRating Int? // 1-5 star rating for communication
+  escalatedTo      String? // user ID if escalated
+  escalatedAt      DateTime?
+  escalatedReason  String?
+  // New fields for service sequence tracking
+  serviceOrder     ServiceOrder? // For BOTH service type: which service comes first
+  parentQueueId    String? // Links to the first queue in a sequence
+  isSequenceComplete Boolean     @default(false) // True when both services in sequence are completed
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  customer         Customer       @relation(fields: [customerId], references: [id])
+  calledByUser     User?          @relation("CalledByUser", fields: [calledBy], references: [id])
+  escalatedToUser  User?          @relation("EscalatedToUser", fields: [escalatedTo], references: [id])
+  parentQueue      Queue?         @relation("QueueSequence", fields: [parentQueueId], references: [id])
+  childQueues      Queue[]        @relation("QueueSequence")
+
+  @@map("queues")
+}
+
+model QueueCounter {
+  id           String      @id @default(cuid())
+  serviceType  ServiceType
+  currentNumber Int        @default(0)
+  date         DateTime    @default(now()) @db.Date
+  updatedAt    DateTime    @updatedAt
+
+  @@unique([serviceType, date])
+  @@map("queue_counters")
+}
+
+model ServiceTemplate {
+  id          String         @id @default(cuid())
+  category    ServiceCategory
+  title       String
+  content     String
+  isActive    Boolean        @default(true)
+  usageCount  Int            @default(0)
+  createdBy   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("service_templates")
+}
+
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  isActive    Boolean  @default(true)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("announcements")
+}

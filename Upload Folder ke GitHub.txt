@@ -1,0 +1,31 @@
+1. bikin repository
+2. difolder klik kanan git bash
+3. git init
+5. isi .gitignore dengan file yang dikecualikan seperti node_modules, dan .env
+6. git status
+7. git add . => menambahkan semua file ke github
+8. git commit -m "ramzshop commit"
+9. git branch -M ramz -> iki opsional iso gae nama opo ae "ramz", "main"
+10. git remote add origin https://github.com/sftlh/ramzshops.git
+11. git push -u origin ramz
+
+12. lek misal onok file kegeden  Large files detected. You may want to try Git Large File Storage - https://git-lfs.github.com
+13. git filter-branch -f --index-filter 'git rm --cached --ignore-unmatch namafile'
+
+14. kalau gk berhasil pakai git lfs install
+15. terus git lfs push --all origin 
+
+16. terus git add . lagi, dan git commit -m "ramzshop commit" lagi, terus push
+
+
+Cara Update
+1. git status
+2. git add .
+3. git commit -m "update data"
+4. git pull origin nama_origin --rebase
+5. git push origin nama_origin
+
+Cara Update Repository Local
+1. git fetch origin
+2. git pull origin nama_origin
+3. git log --oneline -5 -> verify update

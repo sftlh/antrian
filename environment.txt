@@ -1,0 +1,8 @@
+# Environment variables declared in this file are available to use in your application
+# Learn more about environment variables: https://nextjs.org/docs/basic-features/environment-variables
+
+# Database
+DATABASE_URL="postgresql://admin:admin@host.docker.internal:5781/antrian_db?schema=public"
+
+# JWT Authentication
+JWT_SECRET="" -> diisi sembarang

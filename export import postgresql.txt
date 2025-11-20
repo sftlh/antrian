@@ -1,0 +1,15 @@
+Cara Export :
+1. docker ps
+2. docker exec -t your_container_name pg_dump -U your_user -d your_db_name > backup.sql
+
+Cara Import :
+1. docker cp backup.sql your_container_name:/backup.sql
+2. docker exec -i your_container_name psql -U your_user -d your_db_name < backup.sql
+
+Cara Masuk ke PSQL:
+1. docker exec -it container_name psql -U admin -d dashmad
+
+
+Cara agar Uploads bisa diakses setelah docker dinyalakan
+1. docker exec -u root -it dashmad-app sh
+2. chmod -R 777 public/uploads
