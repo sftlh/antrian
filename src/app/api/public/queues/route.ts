@@ -3,21 +3,17 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get today's date range in UTC
-    const now = new Date()
-    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
-    const tomorrow = new Date(today)
-    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+    // Get today's date for filtering in JavaScript (handles timezone issues)
+    const todayString = new Date().toDateString()
 
-    // Get current queues (waiting, called, in progress)
-    const queues = await prisma.queue.findMany({
+    // Get current queues (waiting, called, in progress) - get recent queues and filter in JS
+    const recentQueues = await prisma.queue.findMany({
       where: {
-        createdAt: {
-          gte: today,
-          lt: tomorrow
-        },
         status: {
           in: ['WAITING', 'CALLED', 'IN_PROGRESS']
+        },
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
         }
       },
       select: {
@@ -42,18 +38,28 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    // Calculate statistics
-    const allQueuesToday = await prisma.queue.findMany({
+    // Filter queues created today
+    const queues = recentQueues.filter(queue => {
+      return new Date(queue.createdAt).toDateString() === todayString
+    })
+
+    // Calculate statistics - get recent queues and filter in JS
+    const allRecentQueues = await prisma.queue.findMany({
       where: {
         createdAt: {
-          gte: today,
-          lt: tomorrow
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
         }
       },
       select: {
         status: true,
-        serviceType: true
+        serviceType: true,
+        createdAt: true
       }
+    })
+
+    // Filter queues created today
+    const allQueuesToday = allRecentQueues.filter(queue => {
+      return new Date(queue.createdAt).toDateString() === todayString
     })
 
     const stats = {
