@@ -84,33 +84,6 @@ export default function Home() {
         <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-8 border border-green-100">
           {/* Header Section */}
           <div className="text-center">
-            <div className="mx-auto h-20 w-20 flex items-center justify-center rounded-full bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-xl relative overflow-hidden">
-              {/* Main Logo Design */}
-              <svg className="h-12 w-12 text-white relative z-10" viewBox="0 0 100 100" fill="none">
-                {/* Background decorative elements */}
-                <circle cx="50" cy="50" r="45" fill="rgba(255,255,255,0.1)" />
-
-                {/* Queue lines representing flow */}
-                <rect x="25" y="35" width="3" height="30" fill="white" rx="1.5" />
-                <rect x="32" y="35" width="3" height="25" fill="white" rx="1.5" opacity="0.8" />
-                <rect x="39" y="35" width="3" height="20" fill="white" rx="1.5" opacity="0.6" />
-
-                {/* Stylized "N" for Nawaitu */}
-                <path d="M55 30 L55 70 L58 70 L58 45 L68 70 L71 70 L71 30 L68 30 L68 55 L58 30 Z" fill="white" />
-
-                {/* Service counter dots */}
-                <circle cx="75" cy="40" r="2" fill="white" opacity="0.9" />
-                <circle cx="75" cy="50" r="2" fill="white" opacity="0.7" />
-                <circle cx="75" cy="60" r="2" fill="white" opacity="0.5" />
-
-                {/* Flow arrows */}
-                <path d="M20 40 L15 35 M20 40 L15 45 M20 40 L25 40" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
-                <path d="M20 60 L15 55 M20 60 L15 65 M20 60 L25 60" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
-              </svg>
-
-              {/* Animated background effect */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400/20 to-emerald-600/20 animate-pulse"></div>
-            </div>
             <h2 className="mt-6 text-4xl font-black bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent drop-shadow-lg tracking-wide">
               NAWAITU
             </h2>
