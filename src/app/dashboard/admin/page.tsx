@@ -13,6 +13,20 @@ interface QueueStats {
   cancelled: number
 }
 
+interface AnalyticsData {
+  serviceDistribution: {
+    HELPDESK: number
+    TPT: number
+    BOTH: number
+  }
+  priorityDistribution: {
+    NORMAL: number
+    HIGH: number
+    URGENT: number
+  }
+  averageWaitTime: number
+}
+
 interface User {
   id: string
   username: string
@@ -81,12 +95,376 @@ interface UploadProgress {
   errors: string[]
 }
 
+interface SystemSettings {
+  businessHoursStart: string
+  businessHoursEnd: string
+  maxQueuesPerStaff: number
+  autoAssignQueues: boolean
+  escalationTimeout: number
+}
+
+interface PublicQueue {
+  id: string
+  queueNumber: string
+  serviceType: string
+  status: string
+  priorityLevel: string
+  customerName: string
+  customerNpwp: string
+  createdAt: string
+  calledAt?: string
+  startedAt?: string
+}
+
+interface PublicQueueStats {
+  totalWaiting: number
+  totalInProgress: number
+  totalCompleted: number
+  helpdeskWaiting: number
+  tptWaiting: number
+  helpdeskInProgress: number
+  tptInProgress: number
+}
+
+function AdminPublicQueueDisplay() {
+  const [queues, setQueues] = useState<PublicQueue[]>([])
+  const [stats, setStats] = useState<PublicQueueStats>({
+    totalWaiting: 0,
+    totalInProgress: 0,
+    totalCompleted: 0,
+    helpdeskWaiting: 0,
+    tptWaiting: 0,
+    helpdeskInProgress: 0,
+    tptInProgress: 0
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking')
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  useEffect(() => {
+    fetchData()
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchData, 30000)
+    // Update current time every second
+    const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000)
+
+    // Listen for fullscreen changes
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+
+    return () => {
+      clearInterval(interval)
+      clearInterval(timeInterval)
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      console.log('🔄 Fetching queue data...')
+      setError(null)
+      setConnectionStatus('checking')
+
+      // Fetch current queues
+      const queuesResponse = await fetch('/api/public/queues')
+
+      if (!queuesResponse.ok) {
+        throw new Error(`API responded with status: ${queuesResponse.status} ${queuesResponse.statusText}`)
+      }
+
+      const queuesData = await queuesResponse.json()
+      console.log('📊 Received data:', queuesData)
+
+      if (queuesData.error) {
+        throw new Error(queuesData.error)
+      }
+
+      setQueues(queuesData.queues || [])
+      setStats(queuesData.stats || {
+        totalWaiting: 0,
+        totalInProgress: 0,
+        totalCompleted: 0,
+        helpdeskWaiting: 0,
+        tptWaiting: 0,
+        helpdeskInProgress: 0,
+        tptInProgress: 0
+      })
+      setLastUpdate(new Date())
+      setConnectionStatus('connected')
+      console.log('✅ Data updated successfully')
+    } catch (error) {
+      console.error('❌ Failed to fetch data:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      setError(`Failed to load queue data: ${errorMessage}`)
+      setConnectionStatus('disconnected')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'WAITING': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      case 'CALLED': return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'IN_PROGRESS': return 'bg-green-100 text-green-800 border-green-200'
+      case 'COMPLETED': return 'bg-gray-100 text-gray-800 border-gray-200'
+      default: return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'WAITING': return 'Menunggu'
+      case 'CALLED': return 'Dipanggil'
+      case 'IN_PROGRESS': return 'Sedang Dilayani'
+      case 'COMPLETED': return 'Selesai'
+      default: return status
+    }
+  }
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen()
+        setIsFullscreen(true)
+      } else {
+        await document.exitFullscreen()
+        setIsFullscreen(false)
+      }
+    } catch (error) {
+      console.error('Error toggling fullscreen:', error)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat tampilan publik...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={`bg-white shadow rounded-lg ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+              <span className="text-white text-xl font-bold">KPP</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">Tampilan Publik Antrian</h2>
+              <p className="text-indigo-100">Kantor Pelayanan Pajak Madya Dua Surabaya</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="text-right">
+              <div className="text-lg mb-1">
+                {currentTime.toLocaleDateString('id-ID', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </div>
+              <div className="text-3xl font-bold">
+                {currentTime.toLocaleTimeString('id-ID', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit'
+                })}
+              </div>
+            </div>
+            <button
+              onClick={toggleFullscreen}
+              className="bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-colors"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            >
+              {isFullscreen ? (
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.5 3.5M15 9h4.5M15 9V4.5M15 9l5.5-5.5M9 15v4.5M9 15H4.5M9 15l-5.5 5.5M15 15h4.5M15 15v4.5m0-4.5l5.5 5.5" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 3l-6 6m0 0V4m0 5h5M3 21l6-6m0 0v5m0-5H4" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
+        {/* Connection Status and Refresh */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${
+                connectionStatus === 'connected' ? 'bg-green-500' :
+                connectionStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500'
+              }`}></div>
+              <span className="text-sm text-gray-600">
+                {connectionStatus === 'connected' ? 'Live' :
+                 connectionStatus === 'disconnected' ? 'Offline' : 'Connecting...'}
+              </span>
+            </div>
+            {lastUpdate && (
+              <span className="text-sm text-gray-500">
+                Update: {lastUpdate.toLocaleTimeString('id-ID')}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={fetchData}
+            disabled={connectionStatus === 'checking'}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            🔄 Refresh
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center">
+              <div className="text-red-600 mr-2">⚠️</div>
+              <div className="text-red-800 text-sm">{error}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Statistics Overview */}
+        <div className="bg-gray-50 rounded-xl p-6 mb-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Status Antrian Hari Ini</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <div className="text-3xl font-bold text-yellow-600 mb-1">{stats.totalWaiting}</div>
+              <div className="text-sm text-yellow-800">Menunggu</div>
+            </div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-3xl font-bold text-blue-600 mb-1">{stats.totalInProgress}</div>
+              <div className="text-sm text-blue-800">Sedang Dilayani</div>
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="text-3xl font-bold text-green-600 mb-1">{stats.totalCompleted}</div>
+              <div className="text-sm text-green-800">Selesai</div>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="text-3xl font-bold text-purple-600 mb-1">{stats.helpdeskWaiting + stats.tptWaiting}</div>
+              <div className="text-sm text-purple-800">Total Antrian</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Current Queues */}
+        <div className="space-y-6">
+          {/* Helpdesk Queues */}
+          <div>
+            <h3 className="text-lg font-semibold text-blue-600 mb-3">Helpdesk</h3>
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {queues.filter(q => q.serviceType === 'HELPDESK').length > 0 ? (
+                queues.filter(q => q.serviceType === 'HELPDESK').map((queue) => (
+                  <div key={queue.id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-xl font-bold text-blue-900 min-w-0">
+                        {queue.queueNumber}
+                      </div>
+                      <div className="flex flex-col">
+                        <div className="font-medium text-gray-900">{queue.customerName}</div>
+                        <div className="text-sm text-gray-600">{queue.customerNpwp}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getStatusColor(queue.status)}`}>
+                        {getStatusText(queue.status)}
+                      </span>
+                      {queue.priorityLevel === 'HIGH' && (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 border border-orange-200">
+                          Prioritas
+                        </span>
+                      )}
+                      {queue.priorityLevel === 'URGENT' && (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-200">
+                          Mendesak
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg">
+                  <p className="text-lg">Tidak ada antrian Helpdesk saat ini</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* TPT Queues */}
+          <div>
+            <h3 className="text-lg font-semibold text-purple-600 mb-3">TPT (Tempat Pelayanan Terpadu)</h3>
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {queues.filter(q => q.serviceType === 'TPT').length > 0 ? (
+                queues.filter(q => q.serviceType === 'TPT').map((queue) => (
+                  <div key={queue.id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-xl font-bold text-purple-900 min-w-0">
+                        {queue.queueNumber}
+                      </div>
+                      <div className="flex flex-col">
+                        <div className="font-medium text-gray-900">{queue.customerName}</div>
+                        <div className="text-sm text-gray-600">{queue.customerNpwp}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getStatusColor(queue.status)}`}>
+                        {getStatusText(queue.status)}
+                      </span>
+                      {queue.priorityLevel === 'HIGH' && (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 border border-orange-200">
+                          Prioritas
+                        </span>
+                      )}
+                      {queue.priorityLevel === 'URGENT' && (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-200">
+                          Mendesak
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg">
+                  <p className="text-lg">Tidak ada antrian TPT saat ini</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const { user, isLoading, logout } = useAuth()
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [stats, setStats] = useState<QueueStats>({ total: 0, waiting: 0, inProgress: 0, completed: 0, escalated: 0, cancelled: 0 })
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'analytics' | 'queues' | 'customers' | 'settings'>('overview')
+  const [analytics, setAnalytics] = useState<AnalyticsData>({
+    serviceDistribution: { HELPDESK: 0, TPT: 0, BOTH: 0 },
+    priorityDistribution: { NORMAL: 0, HIGH: 0, URGENT: 0 },
+    averageWaitTime: 0
+  })
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'analytics' | 'queues' | 'customers' | 'settings' | 'public'>('overview')
   const [showUserModal, setShowUserModal] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [userForm, setUserForm] = useState<UserFormData>({
@@ -107,7 +485,15 @@ export default function AdminDashboard() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState<{processed: number, total: number, errors: string[]}>({processed: 0, total: 0, errors: []})
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress>({ processed: 0, total: 0, errors: [] })
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+  const [settings, setSettings] = useState<SystemSettings>({
+    businessHoursStart: '08:00',
+    businessHoursEnd: '17:00',
+    maxQueuesPerStaff: 10,
+    autoAssignQueues: true,
+    escalationTimeout: 30
+  })
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -124,6 +510,12 @@ export default function AdminDashboard() {
       }
       if (activeTab === 'customers') {
         fetchCustomers()
+      }
+      if (activeTab === 'analytics') {
+        fetchAnalytics()
+      }
+      if (activeTab === 'settings') {
+        fetchSettings()
       }
     }
   }, [user, activeTab])
@@ -154,6 +546,40 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error)
+    }
+  }
+
+  const fetchAnalytics = async () => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      const response = await fetch('/api/admin/analytics', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setAnalytics(data.analytics)
+      }
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error)
+    }
+  }
+
+  const fetchSettings = async () => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      const response = await fetch('/api/admin/settings', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setSettings(data.settings)
+      }
+    } catch (error) {
+      console.error('Failed to fetch settings:', error)
     }
   }
 
@@ -191,6 +617,63 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Failed to update user status:', error)
+    }
+  }
+
+  const deleteUser = async (userId: string) => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      const response = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setMessage({ type: 'success', text: result.message })
+        fetchUsers() // Refresh the user list
+        setShowDeleteConfirm(null)
+        setTimeout(() => setMessage(null), 3000)
+      } else {
+        const error = await response.json()
+        setMessage({ type: 'error', text: error.error || 'Failed to delete user' })
+        setTimeout(() => setMessage(null), 3000)
+      }
+    } catch (error) {
+      console.error('Failed to delete user:', error)
+      setMessage({ type: 'error', text: 'Failed to delete user' })
+      setTimeout(() => setMessage(null), 3000)
+    }
+  }
+
+  const saveSettings = async () => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      const response = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      })
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Settings saved successfully' })
+        setTimeout(() => setMessage(null), 3000)
+      } else {
+        const error = await response.json()
+        setMessage({ type: 'error', text: error.error || 'Failed to save settings' })
+        setTimeout(() => setMessage(null), 3000)
+      }
+    } catch (error) {
+      console.error('Failed to save settings:', error)
+      setMessage({ type: 'error', text: 'Failed to save settings' })
+      setTimeout(() => setMessage(null), 3000)
     }
   }
 
@@ -490,6 +973,16 @@ export default function AdminDashboard() {
               >
                 Settings
               </button>
+              <button
+                onClick={() => setActiveTab('public')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'public'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Public Display
+              </button>
             </nav>
           </div>
 
@@ -703,6 +1196,12 @@ export default function AdminDashboard() {
                           >
                             {user.isActive ? 'Deactivate' : 'Activate'}
                           </button>
+                          <button
+                            onClick={() => setShowDeleteConfirm(user.id)}
+                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </div>
                     </li>
@@ -761,7 +1260,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="ml-4">
                           <dt className="text-sm font-medium text-yellow-600 truncate">Avg Wait Time</dt>
-                          <dd className="text-2xl font-semibold text-yellow-900">~5 min</dd>
+                          <dd className="text-2xl font-semibold text-yellow-900">{analytics.averageWaitTime} min</dd>
                         </div>
                       </div>
                     </div>
@@ -775,15 +1274,15 @@ export default function AdminDashboard() {
                         <div className="space-y-2">
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-600">HELPDESK</span>
-                            <span className="text-sm font-medium">45%</span>
+                            <span className="text-sm font-medium">{analytics.serviceDistribution.HELPDESK}%</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-600">TPT</span>
-                            <span className="text-sm font-medium">35%</span>
+                            <span className="text-sm font-medium">{analytics.serviceDistribution.TPT}%</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-600">BOTH</span>
-                            <span className="text-sm font-medium">20%</span>
+                            <span className="text-sm font-medium">{analytics.serviceDistribution.BOTH}%</span>
                           </div>
                         </div>
                       </div>
@@ -793,15 +1292,15 @@ export default function AdminDashboard() {
                         <div className="space-y-2">
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-600">Normal</span>
-                            <span className="text-sm font-medium">70%</span>
+                            <span className="text-sm font-medium">{analytics.priorityDistribution.NORMAL}%</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-600">High</span>
-                            <span className="text-sm font-medium">25%</span>
+                            <span className="text-sm font-medium">{analytics.priorityDistribution.HIGH}%</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-600">Urgent</span>
-                            <span className="text-sm font-medium">5%</span>
+                            <span className="text-sm font-medium">{analytics.priorityDistribution.URGENT}%</span>
                           </div>
                         </div>
                       </div>
@@ -1013,13 +1512,15 @@ export default function AdminDashboard() {
                       <div className="mt-1 flex space-x-2">
                         <input
                           type="time"
-                          defaultValue="08:00"
+                          value={settings.businessHoursStart}
+                          onChange={(e) => setSettings({ ...settings, businessHoursStart: e.target.value })}
                           className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
                         <span className="self-center text-gray-500">to</span>
                         <input
                           type="time"
-                          defaultValue="17:00"
+                          value={settings.businessHoursEnd}
+                          onChange={(e) => setSettings({ ...settings, businessHoursEnd: e.target.value })}
                           className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         />
                       </div>
@@ -1029,16 +1530,21 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-medium text-gray-700">Max Queues per Staff</label>
                       <input
                         type="number"
-                        defaultValue="10"
+                        value={settings.maxQueuesPerStaff}
+                        onChange={(e) => setSettings({ ...settings, maxQueuesPerStaff: parseInt(e.target.value) || 0 })}
                         className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Auto-assign Queues</label>
-                      <select className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <option>Enabled</option>
-                        <option>Disabled</option>
+                      <select
+                        value={settings.autoAssignQueues ? 'enabled' : 'disabled'}
+                        onChange={(e) => setSettings({ ...settings, autoAssignQueues: e.target.value === 'enabled' })}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      >
+                        <option value="enabled">Enabled</option>
+                        <option value="disabled">Disabled</option>
                       </select>
                     </div>
 
@@ -1046,7 +1552,8 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-medium text-gray-700">Escalation Timeout (minutes)</label>
                       <input
                         type="number"
-                        defaultValue="30"
+                        value={settings.escalationTimeout}
+                        onChange={(e) => setSettings({ ...settings, escalationTimeout: parseInt(e.target.value) || 0 })}
                         className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       />
                     </div>
@@ -1055,6 +1562,7 @@ export default function AdminDashboard() {
                   <div className="flex justify-end">
                     <button
                       type="button"
+                      onClick={saveSettings}
                       className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                       Save Settings
@@ -1063,6 +1571,11 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Public Display Tab */}
+          {activeTab === 'public' && (
+            <AdminPublicQueueDisplay />
           )}
         </div>
       </div>
@@ -1353,6 +1866,34 @@ export default function AdminDashboard() {
                     No customers found
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Delete User</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Are you sure you want to delete this user? This action cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => deleteUser(showDeleteConfirm)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Delete User
+                </button>
               </div>
             </div>
           </div>

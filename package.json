@@ -1,5 +1,5 @@
 {
-  "name": "antrian-queue-system",
+  "name": "nawaitu",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -13,16 +13,19 @@
     "autoprefixer": "^10.4.21",
     "bcryptjs": "^2.4.3",
     "csv-parse": "^6.1.0",
+    "file-saver": "^2.0.5",
     "jsonwebtoken": "^9.0.2",
     "next": "14.2.5",
     "prisma": "^5.6.0",
     "react": "^18",
     "react-dom": "^18",
+    "xlsx": "^0.18.5",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/csv-parse": "^1.1.12",
+    "@types/file-saver": "^2.0.7",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20",
     "@types/react": "^18",

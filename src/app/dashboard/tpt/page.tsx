@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth/context'
 import { useRouter } from 'next/navigation'
+import ServiceHistory from '@/components/ServiceHistory'
+import UserAvatar from '@/components/UserAvatar'
+import QueueTimer from '@/components/QueueTimer'
 
 interface Queue {
   id: string
@@ -533,26 +536,7 @@ export default function TPTDashboard() {
         <div className="px-4 py-6 sm:px-0">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Dashboard TPT - Tempat Pelayanan Terpadu</h1>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                Selamat datang, {user.name}
-              </div>
-              <button
-                onClick={() => window.open('/feedback/tpt', '_blank')}
-                className="inline-flex items-center px-3 py-2 border border-blue-300 shadow-sm text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                💬 Feedback
-              </button>
-              <button
-                onClick={() => {
-                  logout()
-                  router.push('/')
-                }}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-              >
-                Keluar
-              </button>
-            </div>
+            <UserAvatar feedbackUrl="/feedback/tpt" />
           </div>
 
           {/* Daily Statistics */}
@@ -870,33 +854,48 @@ export default function TPTDashboard() {
                 )}
 
                 <div className="space-y-2 mb-6">
-                  {queues.filter(q => q.status === 'WAITING').map((queue) => (
-                    <div key={queue.id} className={`flex justify-between items-center p-3 rounded ${
-                      queue.priorityLevel === 'URGENT' ? 'bg-red-50 border border-red-200' :
-                      queue.priorityLevel === 'HIGH' ? 'bg-yellow-50 border border-yellow-200' :
-                      'bg-gray-50'
-                    }`}>
-                      <div className="flex items-center space-x-3">
-                        <div>
-                          <div className="font-semibold">{queue.queueNumber}</div>
-                          <div className="text-sm text-gray-600">{queue.customer.name}</div>
+                  {queues.filter(q => q.status === 'WAITING').map((queue, index) => {
+                    const waitingQueues = queues.filter(q => q.status === 'WAITING')
+                    const showTimer = waitingQueues.length > 1 // Show timer for all waiting customers when there are 2+ in queue
+                    
+                    return (
+                      <div key={queue.id} className={`flex justify-between items-center p-3 rounded ${
+                        queue.priorityLevel === 'URGENT' ? 'bg-red-50 border border-red-200' :
+                        queue.priorityLevel === 'HIGH' ? 'bg-yellow-50 border border-yellow-200' :
+                        'bg-gray-50'
+                      }`}>
+                        <div className="flex items-center space-x-3">
+                          <div>
+                            <div className="font-semibold">{queue.queueNumber}</div>
+                            <div className="text-sm text-gray-600">{queue.customer.name}</div>
+                          </div>
+                          {queue.priorityLevel !== 'NORMAL' && (
+                            <span className={`px-2 py-1 text-xs rounded ${
+                              queue.priorityLevel === 'URGENT' ? 'bg-red-100 text-red-800' :
+                              queue.priorityLevel === 'HIGH' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {queue.priorityLevel === 'URGENT' ? 'MENDESAK' :
+                               queue.priorityLevel === 'HIGH' ? 'TINGGI' : 'NORMAL'}
+                            </span>
+                          )}
+                          {showTimer && (
+                            <QueueTimer
+                              queueStartTime={queue.createdAt}
+                              isActive={true}
+                              onAlarm={() => {
+                                // Optional: Add additional alarm handling here
+                                console.log(`Timer alarm for queue ${queue.queueNumber}`)
+                              }}
+                            />
+                          )}
                         </div>
-                        {queue.priorityLevel !== 'NORMAL' && (
-                          <span className={`px-2 py-1 text-xs rounded ${
-                            queue.priorityLevel === 'URGENT' ? 'bg-red-100 text-red-800' :
-                            queue.priorityLevel === 'HIGH' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {queue.priorityLevel === 'URGENT' ? 'MENDESAK' :
-                             queue.priorityLevel === 'HIGH' ? 'TINGGI' : 'NORMAL'}
-                          </span>
-                        )}
+                        <div className="text-sm text-gray-500">
+                          {new Date(queue.createdAt).toLocaleTimeString()}
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(queue.createdAt).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                   {queues.filter(q => q.status === 'WAITING').length === 0 && (
                     <div className="text-center text-gray-500 py-4">
                       Tidak ada antrian wajib pajak menunggu
@@ -932,159 +931,7 @@ export default function TPTDashboard() {
           )}
 
           {activeTab === 'history' && (
-            <div className="space-y-6">
-              <div className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Riwayat Pelayanan Wajib Pajak</h2>
-
-                {/* Customer Selection */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pilih Wajib Pajak
-                  </label>
-                  <div className="relative customer-search-container">
-                    <input
-                      type="text"
-                      placeholder="Cari berdasarkan NPWP atau nama..."
-                      value={customerSearchForHistory}
-                      onChange={(e) => {
-                        setCustomerSearchForHistory(e.target.value)
-                        searchCustomersForHistory(e.target.value)
-                        setShowCustomerSearch(true)
-                      }}
-                      className="w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                    />
-                    {selectedCustomerForHistory && (
-                      <div className="mt-2 p-3 bg-blue-50 rounded-lg">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="font-medium text-blue-900">{selectedCustomerForHistory.name}</p>
-                            <p className="text-sm text-blue-700">NPWP: {selectedCustomerForHistory.npwp}</p>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setSelectedCustomerForHistory(null)
-                              setCustomerHistory([])
-                            }}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    {showCustomerSearch && customerSearchResults.length > 0 && (
-                      <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none">
-                        {customerSearchResults.map((customer) => (
-                          <div
-                            key={customer.id}
-                            className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100"
-                            onClick={() => selectCustomerForHistory(customer)}
-                          >
-                            <div className="flex items-center">
-                              <span className="font-medium">{customer.name}</span>
-                              <span className="ml-2 text-gray-500">({customer.npwp})</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {(selectedCustomerForHistory || currentQueue) ? (
-                  <div>
-                    {(currentQueue && !selectedCustomerForHistory) && (
-                      <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-                        <h3 className="font-medium text-blue-900">Wajib Pajak Saat Ini</h3>
-                        <p className="text-blue-700">{currentQueue.customer.name} - {currentQueue.customer.npwp}</p>
-                      </div>
-                    )}
-
-                    {selectedCustomerForHistory && (
-                      <div className="mb-4 p-4 bg-green-50 rounded-lg">
-                        <h3 className="font-medium text-green-900">Riwayat Wajib Pajak</h3>
-                        <p className="text-green-700">{selectedCustomerForHistory.name} - {selectedCustomerForHistory.npwp}</p>
-                      </div>
-                    )}
-
-                    {/* Search and Filter Controls */}
-                    <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="Cari nomor antrian, nama, atau catatan..."
-                          value={historySearch}
-                          onChange={(e) => setHistorySearch(e.target.value)}
-                          className="w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <select
-                          value={historyFilter}
-                          onChange={(e) => setHistoryFilter(e.target.value)}
-                          className="w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                        >
-                          <option value="all">Semua Pelayanan</option>
-                          <option value="high-rating">Rating Tinggi (4-5⭐)</option>
-                          <option value="low-rating">Rating Rendah (1-2⭐)</option>
-                          <option value="escalated">Yang Dieskalasi</option>
-                          <option value="urgent">Prioritas Mendesak</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {filteredHistory.length > 0 ? (
-                      <div className="space-y-4">
-                        {filteredHistory.map((service) => (
-                          <div key={service.id} className="border border-gray-200 rounded-lg p-4">
-                            <div className="flex justify-between items-start mb-2">
-                              <span className="font-medium">{service.queueNumber}</span>
-                              <span className={`px-2 py-1 text-xs rounded ${
-                                service.status === 'COMPLETED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {service.status === 'COMPLETED' ? 'Selesai' : 'Dalam Proses'}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-2">
-                              {new Date(service.createdAt).toLocaleDateString()} {new Date(service.createdAt).toLocaleTimeString()}
-                            </p>
-                            {service.notes && (
-                              <p className="text-sm text-gray-700 mb-2">{service.notes}</p>
-                            )}
-                            {service.rating && (
-                              <div className="flex items-center">
-                                <span className="text-sm text-gray-600 mr-2">Rating:</span>
-                                <div className="flex">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <span key={star} className={star <= (service.rating || 0) ? 'text-yellow-400' : 'text-gray-300'}>
-                                      ★
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {service.feedback && (
-                              <p className="text-sm text-gray-700 mt-1 italic">&quot;{service.feedback}&quot;</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center text-gray-500 py-8">
-                        <div className="text-4xl mb-4">📋</div>
-                        <p>Belum ada riwayat pelayanan yang sesuai filter</p>
-                        <p className="text-sm mt-2">Coba ubah kriteria pencarian atau filter</p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    <div className="text-4xl mb-4">👤</div>
-                    <p>Cari dan pilih wajib pajak untuk melihat riwayat pelayanan</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <ServiceHistory serviceType="TPT" />
           )}
         </div>
       </div>

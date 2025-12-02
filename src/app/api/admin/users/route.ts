@@ -225,3 +225,65 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    // Verify admin access
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    const payload = verifyToken(token)
+
+    if (!payload || payload.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    }
+
+    const { userId } = await request.json()
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 })
+    }
+
+    // Prevent admin from deleting themselves
+    if (payload.userId === userId) {
+      return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
+    }
+
+    // Check if user exists and get their details
+    const userToDelete = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, role: true }
+    })
+
+    if (!userToDelete) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Prevent deletion of the last admin user
+    if (userToDelete.role === 'ADMIN') {
+      const adminCount = await prisma.user.count({
+        where: { role: 'ADMIN', isActive: true }
+      })
+
+      if (adminCount <= 1) {
+        return NextResponse.json({ error: 'Cannot delete the last active admin user' }, { status: 400 })
+      }
+    }
+
+    // Delete the user
+    await prisma.user.delete({
+      where: { id: userId }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: `User ${userToDelete.name} has been deleted successfully`
+    })
+  } catch (error) {
+    console.error('Admin user delete error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

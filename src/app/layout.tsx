@@ -3,7 +3,7 @@ import { Providers } from '@/components/providers'
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Antrian Queue System",
+  title: "Nawaitu (Nagawa Antrian Untukmu)",
   description: "Queue Management System for Service Center",
 };
 

@@ -3,17 +3,33 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get today's date for filtering in JavaScript (handles timezone issues)
-    const todayString = new Date().toDateString()
+    console.log('🔄 Public queues API called at:', new Date().toISOString())
+    console.log('📊 Environment check - DATABASE_URL exists:', !!process.env.DATABASE_URL)
+    console.log('🌍 NODE_ENV:', process.env.NODE_ENV)
 
-    // Get current queues (waiting, called, in progress) - get recent queues and filter in JS
-    const recentQueues = await prisma.queue.findMany({
+    // Test database connection
+    await prisma.$connect()
+    console.log('✅ Database connection successful')
+
+    // Get current UTC date for consistent filtering across timezones
+    const now = new Date()
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+    const tomorrow = new Date(today)
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+
+    console.log('Date filtering (UTC):')
+    console.log('- Today (UTC start):', today.toISOString())
+    console.log('- Tomorrow (UTC end):', tomorrow.toISOString())
+
+    // Get current queues (waiting, called, in progress) - filter by UTC date range
+    const queues = await prisma.queue.findMany({
       where: {
         status: {
           in: ['WAITING', 'CALLED', 'IN_PROGRESS']
         },
         createdAt: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+          gte: today,
+          lt: tomorrow
         }
       },
       select: {
@@ -38,28 +54,28 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    // Filter queues created today
-    const queues = recentQueues.filter(queue => {
-      return new Date(queue.createdAt).toDateString() === todayString
-    })
+    console.log(`Found ${queues.length} active queues`)
 
-    // Calculate statistics - get recent queues and filter in JS
-    const allRecentQueues = await prisma.queue.findMany({
+    // Calculate statistics - get all queues for today
+    const allQueuesToday = await prisma.queue.findMany({
       where: {
         createdAt: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+          gte: today,
+          lt: tomorrow
         }
       },
       select: {
         status: true,
-        serviceType: true,
-        createdAt: true
+        serviceType: true
       }
     })
 
-    // Filter queues created today
-    const allQueuesToday = allRecentQueues.filter(queue => {
-      return new Date(queue.createdAt).toDateString() === todayString
+    console.log(`Found ${allQueuesToday.length} total queues for today`)
+    console.log('Status breakdown:', {
+      WAITING: allQueuesToday.filter(q => q.status === 'WAITING').length,
+      CALLED: allQueuesToday.filter(q => q.status === 'CALLED').length,
+      IN_PROGRESS: allQueuesToday.filter(q => q.status === 'IN_PROGRESS').length,
+      COMPLETED: allQueuesToday.filter(q => q.status === 'COMPLETED').length
     })
 
     const stats = {
@@ -71,6 +87,8 @@ export async function GET(request: NextRequest) {
       helpdeskInProgress: allQueuesToday.filter(q => q.serviceType === 'HELPDESK' && q.status === 'IN_PROGRESS').length,
       tptInProgress: allQueuesToday.filter(q => q.serviceType === 'TPT' && q.status === 'IN_PROGRESS').length
     }
+
+    console.log('Calculated stats:', stats)
 
     // Transform queues for frontend
     const transformedQueues = queues.map(queue => ({
@@ -89,12 +107,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       queues: transformedQueues,
-      stats
+      stats,
+      timestamp: new Date().toISOString(),
+      connectionStatus: 'connected'
     })
   } catch (error) {
     console.error('Public queues API error:', error)
+    const errorObj = error as any
+    console.error('Error details:', {
+      message: errorObj?.message,
+      code: errorObj?.code,
+      meta: errorObj?.meta,
+      stack: errorObj?.stack
+    })
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorObj?.message : undefined
+      },
       { status: 500 }
     )
   }

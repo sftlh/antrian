@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth/context'
 import { useRouter } from 'next/navigation'
+import ServiceHistory from '@/components/ServiceHistory'
+import UserAvatar from '@/components/UserAvatar'
+import QueueTimer from '@/components/QueueTimer'
 
 interface Queue {
   id: string
@@ -447,26 +450,7 @@ export default function HelpdeskDashboard() {
         <div className="px-4 py-6 sm:px-0">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Dashboard Helpdesk</h1>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                Selamat datang, {user.name}
-              </div>
-              <button
-                onClick={() => window.open('/feedback/helpdesk', '_blank')}
-                className="inline-flex items-center px-3 py-2 border border-blue-300 shadow-sm text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                💬 Feedback
-              </button>
-              <button
-                onClick={() => {
-                  logout()
-                  router.push('/')
-                }}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                Keluar
-              </button>
-            </div>
+            <UserAvatar feedbackUrl="/feedback/helpdesk" />
           </div>
 
           {/* Tab Navigation */}
@@ -653,17 +637,34 @@ export default function HelpdeskDashboard() {
                 <div className="bg-white shadow rounded-lg p-6">
                   <h2 className="text-xl font-semibold mb-4">Antrian Menunggu</h2>
                   <div className="space-y-2 mb-4">
-                    {queues.filter(q => q.status === 'WAITING').map((queue) => (
-                      <div key={queue.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                        <div>
-                          <div className="font-semibold">{queue.queueNumber}</div>
-                          <div className="text-sm text-gray-600">{queue.customer.name}</div>
+                    {queues.filter(q => q.status === 'WAITING').map((queue, index) => {
+                      const waitingQueues = queues.filter(q => q.status === 'WAITING')
+                      const showTimer = waitingQueues.length > 1 // Show timer for all waiting customers when there are 2+ in queue
+                      
+                      return (
+                        <div key={queue.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                          <div className="flex items-center space-x-3">
+                            <div>
+                              <div className="font-semibold">{queue.queueNumber}</div>
+                              <div className="text-sm text-gray-600">{queue.customer.name}</div>
+                            </div>
+                            {showTimer && (
+                              <QueueTimer
+                                queueStartTime={queue.createdAt}
+                                isActive={true}
+                                onAlarm={() => {
+                                  // Optional: Add additional alarm handling here
+                                  console.log(`Timer alarm for queue ${queue.queueNumber}`)
+                                }}
+                              />
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {new Date(queue.createdAt).toLocaleTimeString()}
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {new Date(queue.createdAt).toLocaleTimeString()}
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
 
                   {/* Stuck In-Progress Queues */}
@@ -719,107 +720,7 @@ export default function HelpdeskDashboard() {
           )}
 
           {activeTab === 'history' && (
-            <div className="space-y-6">
-              <div className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Riwayat Pelayanan Wajib Pajak</h2>
-
-                {/* Customer Selection */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pilih Wajib Pajak
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Cari berdasarkan NPWP atau nama..."
-                      value={customerSearchForHistory}
-                      onChange={(e) => {
-                        setCustomerSearchForHistory(e.target.value)
-                        searchCustomersForHistory(e.target.value)
-                        setShowCustomerSearch(true)
-                      }}
-                      className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    />
-                    {showCustomerSearch && customerSearchResults.length > 0 && (
-                      <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
-                        {customerSearchResults.map((customer) => (
-                          <div
-                            key={customer.id}
-                            className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-blue-50"
-                            onClick={() => selectCustomerForHistory(customer)}
-                          >
-                            <div className="flex items-center">
-                              <span className="font-medium">{customer.name}</span>
-                              <span className="ml-2 text-gray-500">({customer.npwp})</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {selectedCustomerForHistory && (
-                    <div className="mt-2 p-3 bg-blue-50 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-blue-900">{selectedCustomerForHistory.name}</p>
-                          <p className="text-sm text-blue-700">NPWP: {selectedCustomerForHistory.npwp}</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setSelectedCustomerForHistory(null)
-                            setCustomerHistory([])
-                            setCustomerSearchForHistory('')
-                          }}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          Ganti Wajib Pajak
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {selectedCustomerForHistory ? (
-                  <div>
-                    {filteredHistory.length > 0 ? (
-                      <div className="space-y-4">
-                        {filteredHistory.map((service) => (
-                        <div key={service.id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="font-medium">{service.queueNumber}</span>
-                            <span className={`px-2 py-1 text-xs rounded ${
-                              service.status === 'COMPLETED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {service.status === 'COMPLETED' ? 'Selesai' : 'Dalam Proses'}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {new Date(service.createdAt).toLocaleDateString()} {new Date(service.createdAt).toLocaleTimeString()}
-                          </p>
-                          {service.notes && (
-                            <p className="text-sm text-gray-700 mb-2">{service.notes}</p>
-                          )}
-                          {service.serviceCategory && (
-                            <p className="text-sm text-blue-600">Kategori: {service.serviceCategory}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center text-gray-500 py-8">
-                      <div className="text-4xl mb-4">📋</div>
-                      <p>Belum ada riwayat pelayanan untuk wajib pajak ini</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-8">
-                  <div className="text-4xl mb-4">👤</div>
-                  <p>Pilih wajib pajak terlebih dahulu untuk melihat riwayat</p>
-                </div>
-              )}
-              </div>
-            </div>
+            <ServiceHistory serviceType="HELPDESK" />
           )}
 
           {activeTab === 'statistics' && (

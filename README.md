@@ -1,4 +1,4 @@
-# Antrian Queue System
+# Nawaitu (Nagawa Antrian Untukmu)
 
 A comprehensive queue management system for Indonesian tax service centers built with Next.js, TypeScript, Tailwind CSS, PostgreSQL, and Prisma.
 
