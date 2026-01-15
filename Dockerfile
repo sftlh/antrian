@@ -14,7 +14,7 @@ FROM node:${NODE_VERSION}-alpine AS base
 
 # Set working directory for all build stages.
 WORKDIR /usr/src/app
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl tzdata
 COPY --chown=node:node package*.json ./
 
 ################################################################################

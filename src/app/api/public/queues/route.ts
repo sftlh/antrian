@@ -1,13 +1,20 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get today's date range (local timezone)
+    console.log('🔄 Public queues API called at:', new Date().toISOString())
+
+    // Get today's date range in UTC for consistent filtering across environments
     const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
     const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+
+    console.log('Date range (UTC):', { today: today.toISOString(), tomorrow: tomorrow.toISOString() })
+    console.log('Server timezone offset:', now.getTimezoneOffset(), 'minutes')
 
     // Get current queues (waiting, called, in progress)
     const queues = await prisma.queue.findMany({
@@ -42,6 +49,8 @@ export async function GET(request: NextRequest) {
       ]
     })
 
+    console.log(`Found ${queues.length} active queues`)
+
     // Calculate statistics
     const allQueuesToday = await prisma.queue.findMany({
       where: {
@@ -56,6 +65,8 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    console.log(`Found ${allQueuesToday.length} total queues for today`)
+
     const stats = {
       totalWaiting: allQueuesToday.filter(q => q.status === 'WAITING').length,
       totalInProgress: allQueuesToday.filter(q => q.status === 'IN_PROGRESS').length,
@@ -65,6 +76,8 @@ export async function GET(request: NextRequest) {
       helpdeskInProgress: allQueuesToday.filter(q => q.serviceType === 'HELPDESK' && q.status === 'IN_PROGRESS').length,
       tptInProgress: allQueuesToday.filter(q => q.serviceType === 'TPT' && q.status === 'IN_PROGRESS').length
     }
+
+    console.log('Calculated stats:', stats)
 
     // Transform queues for frontend
     const transformedQueues = queues.map(queue => ({
@@ -80,14 +93,29 @@ export async function GET(request: NextRequest) {
       startedAt: queue.startedAt?.toISOString()
     }))
 
+    console.log('✅ API call completed successfully')
+
+    // Return response with no-cache headers to ensure real-time updates
     return NextResponse.json({
       success: true,
       queues: transformedQueues,
-      stats
+      stats,
+      timestamp: new Date().toISOString()
+    }, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
   } catch (error) {
-    console.error('Public queues API error:', error)
+    console.error('❌ Public queues API error:', error)
     const errorObj = error as any
+    console.error('Error details:', {
+      message: errorObj?.message,
+      code: errorObj?.code,
+      meta: errorObj?.meta
+    })
     return NextResponse.json(
       {
         error: 'Internal server error',

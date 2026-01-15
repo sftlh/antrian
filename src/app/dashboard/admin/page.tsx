@@ -146,8 +146,8 @@ function AdminPublicQueueDisplay() {
 
   useEffect(() => {
     fetchData()
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000)
+    // Auto-refresh every 10 seconds for more real-time updates
+    const interval = setInterval(fetchData, 10000)
     // Update current time every second
     const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000)
 
@@ -171,8 +171,8 @@ function AdminPublicQueueDisplay() {
       setError(null)
       setConnectionStatus('checking')
 
-      // Fetch current queues
-      const queuesResponse = await fetch('/api/public/queues')
+      // Fetch current queues with cache-busting parameter
+      const queuesResponse = await fetch(`/api/public/queues?t=${Date.now()}`)
 
       if (!queuesResponse.ok) {
         throw new Error(`API responded with status: ${queuesResponse.status} ${queuesResponse.statusText}`)

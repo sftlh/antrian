@@ -83,9 +83,11 @@ export async function POST(req: NextRequest) {
       const today = new Date()
       const dateStr = today.toISOString().split('T')[0].replace(/-/g, '')
 
-      // Count queues created today
-      const todayStart = new Date(today.setHours(0, 0, 0, 0))
-      const todayEnd = new Date(today.setHours(23, 59, 59, 999))
+      // Count queues created today (UTC-based)
+      const now = new Date()
+      const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+      const todayEnd = new Date(todayStart)
+      todayEnd.setUTCHours(23, 59, 59, 999)
 
       const queueCount = await tx.queue.count({
         where: {

@@ -37,12 +37,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get today's date range
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = today.getMonth()
-    const day = today.getDate()
-    const startOfDay = new Date(year, month, day, 0, 0, 0, 0)
-    const endOfDay = new Date(year, month, day, 23, 59, 59, 999)
+    // Get today's date range in UTC for consistent filtering
+    const now = new Date()
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+    const startOfDay = new Date(today)
+    const endOfDay = new Date(today)
+    endOfDay.setUTCHours(23, 59, 59, 999)
 
     // Get active queues (waiting and in progress only - normal management)
     const activeQueues: QueueWithRelations[] = await prisma.queue.findMany({
