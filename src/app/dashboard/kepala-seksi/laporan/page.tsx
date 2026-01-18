@@ -349,7 +349,7 @@ export default function LaporanPage() {
         ) : (
            <div className="flex flex-col items-center justify-center p-20 text-slate-400 bg-white rounded-2xl border border-slate-100 border-dashed">
               <BarChart3 className="w-16 h-16 mb-4 opacity-20" />
-              <p className="text-lg">Silakan pilih rentang tanggal dan klik "Tampilkan Data"</p>
+              <p className="text-lg">{'Silakan pilih rentang tanggal dan klik "Tampilkan Data"'}</p>
            </div>
         )}
 

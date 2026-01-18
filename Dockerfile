@@ -49,31 +49,51 @@ RUN mkdir -p public/uploads/ && chown -R node:node public/uploads
 COPY . .
 # Run the build script.
 RUN npx prisma generate
-RUN npx prisma migrate deploy
+# Compile seed script
+WORKDIR /usr/src/app/prisma
+RUN npx tsc seed.ts --module CommonJS --esModuleInterop --skipLibCheck --outDir ../prisma-seed
+WORKDIR /usr/src/app
 RUN npm run build
 
 ################################################################################
-# Create a new stage to run the application with minimal runtime dependencies
-# where the necessary files are copied from the build stage.
+# Create a stage for running the application
 FROM base AS final
 
 # Use production node environment by default.
 ENV NODE_ENV=production
 
 # Run the application as a non-root user.
-USER node
+# USER node # Commented out to allow entrypoint script to receive signals or do root things if needed, but best practice is user node. 
+# However, if we need to chown or run things, root might be needed temporarily. 
+# Better: Set user at the end.
+
+WORKDIR /usr/src/app
 
 # Copy package.json so that package manager commands can be used.
 COPY package.json .
 
-# Copy the production dependencies from the deps stage and also
-# the built application from the build stage into the image.
+# Copy production dependencies
 COPY --from=deps /usr/src/app/node_modules ./node_modules
-COPY --from=build /usr/src/app/. ./.
 
+# Copy built application and necessary config
+COPY --from=build /usr/src/app/.next/standalone ./
+COPY --from=build /usr/src/app/.next/static ./.next/static
+COPY --from=build /usr/src/app/public ./public
+COPY --from=build /usr/src/app/prisma ./prisma
+COPY --from=build /usr/src/app/prisma-seed/seed.js ./prisma/seed.js
+COPY --from=build /usr/src/app/start.sh ./start.sh
+
+# Ensure start.sh is executable
+RUN chmod +x ./start.sh
+
+# Switch to non-root user
+USER node
 
 # Expose the port that the application listens on.
 EXPOSE 3003
 
+# Configure entrypoint
+ENTRYPOINT ["./start.sh"]
+
 # Run the application.
-CMD ["npm", "run", "start"]
+CMD ["node", "server.js"]
