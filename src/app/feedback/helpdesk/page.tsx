@@ -249,12 +249,7 @@ export default function HelpdeskFeedbackPage() {
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Terima Kasih!</h1>
             <p className="text-gray-600">Feedback Anda telah berhasil dikirim. Layanan kami akan terus berusaha memberikan pelayanan yang lebih baik.</p>
           </div>
-          <button
-            onClick={() => router.push('/dashboard/helpdesk')}
-            className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors"
-          >
-            Kembali ke Dashboard
-          </button>
+        
         </div>
       </div>
     );
@@ -278,12 +273,6 @@ export default function HelpdeskFeedbackPage() {
               Saat ini tidak ada pelanggan yang sedang dilayani di loket Helpdesk.
             </p>
           </div>
-          <button
-            onClick={() => router.push('/')}
-            className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors"
-          >
-            Kembali ke Beranda
-          </button>
         </div>
       </div>
     );

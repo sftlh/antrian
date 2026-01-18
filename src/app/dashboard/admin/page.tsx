@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth/context'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 interface QueueStats {
   total: number
@@ -103,356 +104,7 @@ interface SystemSettings {
   escalationTimeout: number
 }
 
-interface PublicQueue {
-  id: string
-  queueNumber: string
-  serviceType: string
-  status: string
-  priorityLevel: string
-  customerName: string
-  customerNpwp: string
-  createdAt: string
-  calledAt?: string
-  startedAt?: string
-}
-
-interface PublicQueueStats {
-  totalWaiting: number
-  totalInProgress: number
-  totalCompleted: number
-  helpdeskWaiting: number
-  tptWaiting: number
-  helpdeskInProgress: number
-  tptInProgress: number
-}
-
-function AdminPublicQueueDisplay() {
-  const [queues, setQueues] = useState<PublicQueue[]>([])
-  const [stats, setStats] = useState<PublicQueueStats>({
-    totalWaiting: 0,
-    totalInProgress: 0,
-    totalCompleted: 0,
-    helpdeskWaiting: 0,
-    tptWaiting: 0,
-    helpdeskInProgress: 0,
-    tptInProgress: 0
-  })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
-  const [currentTime, setCurrentTime] = useState(new Date())
-  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking')
-  const [isFullscreen, setIsFullscreen] = useState(false)
-
-  useEffect(() => {
-    fetchData()
-    // Auto-refresh every 10 seconds for more real-time updates
-    const interval = setInterval(fetchData, 10000)
-    // Update current time every second
-    const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000)
-
-    // Listen for fullscreen changes
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-
-    return () => {
-      clearInterval(interval)
-      clearInterval(timeInterval)
-      document.removeEventListener('fullscreenchange', handleFullscreenChange)
-    }
-  }, [])
-
-  const fetchData = async () => {
-    try {
-      console.log('🔄 Fetching queue data...')
-      setError(null)
-      setConnectionStatus('checking')
-
-      // Fetch current queues with cache-busting parameter
-      const queuesResponse = await fetch(`/api/public/queues?t=${Date.now()}`)
-
-      if (!queuesResponse.ok) {
-        throw new Error(`API responded with status: ${queuesResponse.status} ${queuesResponse.statusText}`)
-      }
-
-      const queuesData = await queuesResponse.json()
-      console.log('📊 Received data:', queuesData)
-
-      if (queuesData.error) {
-        throw new Error(queuesData.error)
-      }
-
-      setQueues(queuesData.queues || [])
-      setStats(queuesData.stats || {
-        totalWaiting: 0,
-        totalInProgress: 0,
-        totalCompleted: 0,
-        helpdeskWaiting: 0,
-        tptWaiting: 0,
-        helpdeskInProgress: 0,
-        tptInProgress: 0
-      })
-      setLastUpdate(new Date())
-      setConnectionStatus('connected')
-      console.log('✅ Data updated successfully')
-    } catch (error) {
-      console.error('❌ Failed to fetch data:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-      setError(`Failed to load queue data: ${errorMessage}`)
-      setConnectionStatus('disconnected')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'WAITING': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'CALLED': return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'IN_PROGRESS': return 'bg-green-100 text-green-800 border-green-200'
-      case 'COMPLETED': return 'bg-gray-100 text-gray-800 border-gray-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'WAITING': return 'Menunggu'
-      case 'CALLED': return 'Dipanggil'
-      case 'IN_PROGRESS': return 'Sedang Dilayani'
-      case 'COMPLETED': return 'Selesai'
-      default: return status
-    }
-  }
-
-  const toggleFullscreen = async () => {
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen()
-        setIsFullscreen(true)
-      } else {
-        await document.exitFullscreen()
-        setIsFullscreen(false)
-      }
-    } catch (error) {
-      console.error('Error toggling fullscreen:', error)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat tampilan publik...</p>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className={`bg-white shadow rounded-lg ${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <span className="text-white text-xl font-bold">KPP</span>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold">Tampilan Publik Antrian</h2>
-              <p className="text-indigo-100">Kantor Pelayanan Pajak Madya Dua Surabaya</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <div className="text-lg mb-1">
-                {currentTime.toLocaleDateString('id-ID', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </div>
-              <div className="text-3xl font-bold">
-                {currentTime.toLocaleTimeString('id-ID', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit'
-                })}
-              </div>
-            </div>
-            <button
-              onClick={toggleFullscreen}
-              className="bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-colors"
-              title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-            >
-              {isFullscreen ? (
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.5 3.5M15 9h4.5M15 9V4.5M15 9l5.5-5.5M9 15v4.5M9 15H4.5M9 15l-5.5 5.5M15 15h4.5M15 15v4.5m0-4.5l5.5 5.5" />
-                </svg>
-              ) : (
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 3l-6 6m0 0V4m0 5h5M3 21l6-6m0 0v5m0-5H4" />
-                </svg>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6">
-        {/* Connection Status and Refresh */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${
-                connectionStatus === 'connected' ? 'bg-green-500' :
-                connectionStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500'
-              }`}></div>
-              <span className="text-sm text-gray-600">
-                {connectionStatus === 'connected' ? 'Live' :
-                 connectionStatus === 'disconnected' ? 'Offline' : 'Connecting...'}
-              </span>
-            </div>
-            {lastUpdate && (
-              <span className="text-sm text-gray-500">
-                Update: {lastUpdate.toLocaleTimeString('id-ID')}
-              </span>
-            )}
-          </div>
-          <button
-            onClick={fetchData}
-            disabled={connectionStatus === 'checking'}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            🔄 Refresh
-          </button>
-        </div>
-
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="text-red-600 mr-2">⚠️</div>
-              <div className="text-red-800 text-sm">{error}</div>
-            </div>
-          </div>
-        )}
-
-        {/* Statistics Overview */}
-        <div className="bg-gray-50 rounded-xl p-6 mb-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Status Antrian Hari Ini</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-              <div className="text-3xl font-bold text-yellow-600 mb-1">{stats.totalWaiting}</div>
-              <div className="text-sm text-yellow-800">Menunggu</div>
-            </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="text-3xl font-bold text-blue-600 mb-1">{stats.totalInProgress}</div>
-              <div className="text-sm text-blue-800">Sedang Dilayani</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="text-3xl font-bold text-green-600 mb-1">{stats.totalCompleted}</div>
-              <div className="text-sm text-green-800">Selesai</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
-              <div className="text-3xl font-bold text-purple-600 mb-1">{stats.helpdeskWaiting + stats.tptWaiting}</div>
-              <div className="text-sm text-purple-800">Total Antrian</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Current Queues */}
-        <div className="space-y-6">
-          {/* Helpdesk Queues */}
-          <div>
-            <h3 className="text-lg font-semibold text-blue-600 mb-3">Helpdesk</h3>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {queues.filter(q => q.serviceType === 'HELPDESK').length > 0 ? (
-                queues.filter(q => q.serviceType === 'HELPDESK').map((queue) => (
-                  <div key={queue.id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center space-x-4">
-                      <div className="text-xl font-bold text-blue-900 min-w-0">
-                        {queue.queueNumber}
-                      </div>
-                      <div className="flex flex-col">
-                        <div className="font-medium text-gray-900">{queue.customerName}</div>
-                        <div className="text-sm text-gray-600">{queue.customerNpwp}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getStatusColor(queue.status)}`}>
-                        {getStatusText(queue.status)}
-                      </span>
-                      {queue.priorityLevel === 'HIGH' && (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 border border-orange-200">
-                          Prioritas
-                        </span>
-                      )}
-                      {queue.priorityLevel === 'URGENT' && (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-200">
-                          Mendesak
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg">
-                  <p className="text-lg">Tidak ada antrian Helpdesk saat ini</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* TPT Queues */}
-          <div>
-            <h3 className="text-lg font-semibold text-purple-600 mb-3">TPT (Tempat Pelayanan Terpadu)</h3>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {queues.filter(q => q.serviceType === 'TPT').length > 0 ? (
-                queues.filter(q => q.serviceType === 'TPT').map((queue) => (
-                  <div key={queue.id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
-                    <div className="flex items-center space-x-4">
-                      <div className="text-xl font-bold text-purple-900 min-w-0">
-                        {queue.queueNumber}
-                      </div>
-                      <div className="flex flex-col">
-                        <div className="font-medium text-gray-900">{queue.customerName}</div>
-                        <div className="text-sm text-gray-600">{queue.customerNpwp}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getStatusColor(queue.status)}`}>
-                        {getStatusText(queue.status)}
-                      </span>
-                      {queue.priorityLevel === 'HIGH' && (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 border border-orange-200">
-                          Prioritas
-                        </span>
-                      )}
-                      {queue.priorityLevel === 'URGENT' && (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-200">
-                          Mendesak
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg">
-                  <p className="text-lg">Tidak ada antrian TPT saat ini</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+// AdminPublicQueueDisplay component moved to /src/app/display/page.tsx
 
 export default function AdminDashboard() {
   const { user, isLoading, logout } = useAuth()
@@ -518,6 +170,18 @@ export default function AdminDashboard() {
         fetchSettings()
       }
     }
+
+    // Auto-refresh real-time data
+    const interval = setInterval(() => {
+      if (user?.role === 'ADMIN') {
+        fetchStats()
+        if (activeTab === 'queues') {
+          fetchQueues()
+        }
+      }
+    }, 5000)
+
+    return () => clearInterval(interval)
   }, [user, activeTab])
 
   const fetchUsers = async () => {
@@ -1575,7 +1239,20 @@ export default function AdminDashboard() {
 
           {/* Public Display Tab */}
           {activeTab === 'public' && (
-            <AdminPublicQueueDisplay />
+            <div className="bg-white shadow rounded-lg p-6 text-center">
+              <h2 className="text-xl font-semibold mb-4">Tampilan Publik Antrian</h2>
+              <p className="text-gray-600 mb-6">
+                Halaman tampilan publik telah dipindahkan ke halaman terpisah agar dapat diakses tanpa login.
+              </p>
+              <Link
+                href="/display"
+                target="_blank"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <span className="mr-2">📺</span>
+                Buka Tampilan Publik
+              </Link>
+            </div>
           )}
         </div>
       </div>

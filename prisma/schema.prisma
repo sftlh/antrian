@@ -97,6 +97,7 @@ model Queue {
   status           QueueStatus    @default(WAITING)
   customerId       String
   calledBy         String?
+  counter          String?
   calledAt         DateTime?
   startedAt        DateTime?
   completedAt      DateTime?

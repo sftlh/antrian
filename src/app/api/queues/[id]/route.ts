@@ -22,7 +22,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    const { status, notes, internalNotes, serviceCategory, priorityLevel, serviceDuration } = await request.json()
+    const { status, notes, internalNotes, serviceCategory, priorityLevel, serviceDuration, counter } = await request.json()
     const queueId = params.id
 
     // Validate status
@@ -37,9 +37,16 @@ export async function PATCH(
       updatedAt: new Date()
     }
 
+    if (counter) {
+      updateData.counter = counter
+    }
+
     if (status === 'IN_PROGRESS') {
       updateData.startedAt = new Date()
       updateData.calledBy = payload.userId // Set who is handling this queue
+    } else if (status === 'CALLED') {
+      updateData.calledAt = new Date()
+      updateData.calledBy = payload.userId
     } else if (status === 'COMPLETED') {
       updateData.completedAt = new Date()
     }

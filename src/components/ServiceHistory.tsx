@@ -3,6 +3,21 @@
 import { useState, useEffect, useCallback } from 'react'
 import { saveAs } from 'file-saver'
 import * as XLSX from 'xlsx'
+import { 
+  Star, 
+  FileSpreadsheet, 
+  FileText, 
+  ChevronLeft, 
+  ChevronRight, 
+  Calendar,
+  Filter,
+  Loader2,
+  User,
+  MessageSquare,
+  Clock,
+  Briefcase,
+  Hash
+} from 'lucide-react'
 
 interface ServiceHistoryItem {
   id: string
@@ -216,150 +231,208 @@ export default function ServiceHistory({ serviceType = 'ALL', showFilters = true
     }
   }
 
-  const renderStars = (rating: number | null | undefined) => {
-    if (!rating) return '-'
-    return '★'.repeat(rating) + '☆'.repeat(5 - rating)
+  const renderStars = (rating: number | null | undefined, size: number = 14) => {
+    if (!rating) return <span className="text-gray-300 text-xs">-</span>
+    
+    return (
+      <div className="flex gap-0.5" title={`Rating: ${rating}/5`}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star 
+            key={star} 
+            size={size} 
+            className={`${star <= rating 
+              ? 'fill-amber-400 text-amber-400' 
+              : 'fill-gray-100 text-gray-200'}`} 
+          />
+        ))}
+      </div>
+    )
   }
+
+  const StatCard = ({ label, value, icon: Icon, color }: { label: string, value: string | number, icon: any, color: string }) => (
+    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow">
+      <div className={`p-3 rounded-lg ${color} bg-opacity-10 text-${color.split('-')[1]}-600`}>
+        <Icon size={20} className={color.replace('bg-', 'text-')} />
+      </div>
+      <div>
+        <p className="text-sm text-gray-500 font-medium">{label}</p>
+        <p className="text-2xl font-bold text-gray-800 mt-1">{value || '-'}</p>
+      </div>
+    </div>
+  )
 
   if (loading && serviceHistory.length === 0) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2">Memuat riwayat layanan...</span>
+      <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+        <Loader2 className="w-8 h-8 animate-spin mb-3 text-indigo-500" />
+        <span className="text-sm font-medium">Sedang memuat riwayat layanan...</span>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Statistics Overview */}
+    <div className="space-y-6 font-sans">
+      {/* Statistics Overview Grid */}
       {stats && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">Ringkasan Penilaian</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{stats.totalFeedback}</div>
-              <div className="text-sm text-gray-600">Total Feedback</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">{stats.averageRating || '-'}</div>
-              <div className="text-sm text-gray-600">Rating Rata-rata</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.averageNeatness || '-'}</div>
-              <div className="text-sm text-gray-600">Kerapian</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{stats.averageMaterialMastery || '-'}</div>
-              <div className="text-sm text-gray-600">Penguasaan Materi</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-indigo-600">{stats.averageCommunication || '-'}</div>
-              <div className="text-sm text-gray-600">Komunikasi</div>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+           <div className="bg-indigo-600 p-4 rounded-xl shadow-md text-white flex flex-col justify-between">
+              <div className="flex items-center gap-2 opacity-90">
+                <MessageSquare size={18} />
+                <span className="text-sm font-medium">Total Feedback</span>
+              </div>
+              <div className="text-3xl font-bold mt-2">{stats.totalFeedback}</div>
+           </div>
+           
+           <StatCard 
+             label="Rata-rata Rating" 
+             value={stats.averageRating || '-'} 
+             icon={Star} 
+             color="bg-amber-500" 
+           />
+           <StatCard 
+             label="Kerapian" 
+             value={stats.averageNeatness || '-'} 
+             icon={User} 
+             color="bg-emerald-500" 
+           />
+           <StatCard 
+             label="Penguasaan Materi" 
+             value={stats.averageMaterialMastery || '-'} 
+             icon={Briefcase} 
+             color="bg-blue-500" 
+           />
+           <StatCard 
+             label="Komunikasi" 
+             value={stats.averageCommunication || '-'} 
+             icon={MessageSquare} 
+             color="bg-purple-500" 
+           />
         </div>
       )}
 
-      {/* Filters and Download */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <h3 className="text-lg font-semibold">Riwayat Layanan</h3>
+      {/* Main Content Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        
+        {/* Toolbar */}
+        <div className="bg-white p-5 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+              <Clock size={20} />
+            </div>
+            <h3 className="font-bold text-gray-800 text-lg">Riwayat Layanan</h3>
+          </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             {showFilters && (
-              <select
-                value={period}
-                onChange={(e) => setPeriod(e.target.value as 'today' | 'month' | 'all')}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-              >
-                <option value="today">Hari Ini</option>
-                <option value="month">Bulan Ini</option>
-                <option value="all">Semua</option>
-              </select>
+              <div className="relative group">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-indigo-500 transition-colors" size={16} />
+                <select
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value as 'today' | 'month' | 'all')}
+                  className="pl-9 pr-8 py-2 bg-gray-50 hover:bg-white border border-gray-200 hover:border-indigo-300 rounded-lg text-sm font-medium text-gray-700 outline-none focus:ring-2 focus:ring-indigo-100 transition-all appearance-none cursor-pointer w-full md:w-auto"
+                >
+                  <option value="today">Hari Ini</option>
+                  <option value="month">Bulan Ini</option>
+                  <option value="all">Semua Waktu</option>
+                </select>
+              </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full md:w-auto">
               <button
                 onClick={downloadExcel}
                 disabled={downloading}
-                className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                className="flex-1 md:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium shadow-sm hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {downloading ? '...' : '📊'} Excel
+                {downloading ? <Loader2 className="animate-spin" size={16} /> : <FileSpreadsheet size={16} />}
+                <span>Excel</span>
               </button>
               <button
                 onClick={downloadCSV}
                 disabled={downloading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                className="flex-1 md:flex-none px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {downloading ? '...' : '📄'} CSV
+                {downloading ? <Loader2 className="animate-spin" size={16} /> : <FileText size={16} />}
+                <span>CSV</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Service History Table */}
+        {/* Table */}
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-50">
+            <thead className="bg-gray-50/50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Antrian
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Wajib Pajak
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tanggal
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Rating
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Feedback
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Petugas
-                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Antrian</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Wajib Pajak</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Waktu Selesai</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Penilaian</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ulasan Customer</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Petugas</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-50">
               {serviceHistory.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{item.queueNumber}</div>
-                    <div className="text-sm text-gray-500">{item.serviceType}</div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="text-sm font-medium text-gray-900">{item.customer.name}</div>
-                    <div className="text-sm text-gray-500">{item.customer.npwp}</div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(item.completedAt).toLocaleDateString('id-ID')}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="space-y-1">
-                      <div className="text-sm">
-                        <span className="font-medium">Keseluruhan:</span> {renderStars(item.rating)}
+                <tr key={item.id} className="hover:bg-indigo-50/30 transition-colors group">
+                  <td className="px-6 py-4 whitespace-nowrap align-top">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-indigo-50 text-indigo-600 font-bold font-mono text-sm border border-indigo-100">
+                        {item.queueNumber}
                       </div>
-                      <div className="text-sm">
-                        <span className="font-medium">Kerapian:</span> {renderStars(item.neatnessRating)}
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium">Materi:</span> {renderStars(item.materialMasteryRating)}
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium">Komunikasi:</span> {renderStars(item.communicationRating)}
+                      <div className="flex flex-col">
+                         <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{item.serviceType}</span>
+                         {item.serviceCategory && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded w-fit mt-0.5">{item.serviceCategory}</span>}
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4 max-w-xs">
-                    <div className="text-sm text-gray-900 break-words">
-                      {item.feedback || '-'}
+                  <td className="px-6 py-4 align-top">
+                    <div className="font-medium text-gray-900">{item.customer.name}</div>
+                    <div className="text-sm text-gray-500 font-mono mt-0.5">{item.customer.npwp}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 align-top">
+                    <div className="flex items-center gap-2">
+                       <Calendar size={14} className="text-gray-400" />
+                       {new Date(item.completedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </div>
+                    {new Date(item.completedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                  </td>
+                  <td className="px-6 py-4 align-top">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-gray-500 text-xs w-20">Keseluruhan</span> 
+                        {renderStars(item.rating)}
+                      </div>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-gray-500 text-xs w-20">Kerapian</span> 
+                        {renderStars(item.neatnessRating, 12)}
+                      </div>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-gray-500 text-xs w-20">Materi</span>
+                        {renderStars(item.materialMasteryRating, 12)}
+                      </div>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                         <span className="text-gray-500 text-xs w-20">Komunikasi</span>
+                         {renderStars(item.communicationRating, 12)}
+                      </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.calledByUser?.name || '-'}
+                  <td className="px-6 py-4 align-top max-w-xs">
+                    {item.feedback ? (
+                      <div className="text-sm text-gray-700 italic bg-amber-50/50 p-2 rounded border border-amber-100/50">
+                        &quot;{item.feedback}&quot;
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">Tidak ada ulasan</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 align-top">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                        {item.calledByUser?.name?.charAt(0) || '?'}
+                      </div>
+                      {item.calledByUser?.name || '-'}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -367,37 +440,48 @@ export default function ServiceHistory({ serviceType = 'ALL', showFilters = true
           </table>
         </div>
 
-        {/* Pagination */}
-        {stats && stats.totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-700">
-              Menampilkan {((currentPage - 1) * 50) + 1} sampai {Math.min(currentPage * 50, stats.totalCount)} dari {stats.totalCount} hasil
+        {/* Empty State */}
+        {serviceHistory.length === 0 && !loading && (
+          <div className="flex flex-col items-center justify-center p-12 text-center bg-gray-50/30">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+               <Hash className="text-gray-300" size={32} />
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Sebelumnya
-              </button>
-              <span className="px-3 py-1 text-sm">
-                Halaman {currentPage} dari {stats.totalPages}
-              </span>
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === stats.totalPages}
-                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                Selanjutnya
-              </button>
-            </div>
+            <h4 className="text-gray-900 font-medium text-lg">Tidak ada data ditemukan</h4>
+            <p className="text-gray-500 mt-1 max-w-sm">
+              Belum ada riwayat layanan untuk periode {period === 'today' ? 'hari ini' : period === 'month' ? 'bulan ini' : 'ini'}.
+            </p>
           </div>
         )}
 
-        {serviceHistory.length === 0 && !loading && (
-          <div className="text-center py-8 text-gray-500">
-            Tidak ada data riwayat layanan untuk periode yang dipilih.
+        {/* Pagination Footer */}
+        {stats && stats.totalPages > 1 && (
+          <div className="bg-white border-t border-gray-100 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-500">
+              Menampilkan <span className="font-medium text-gray-900">{((currentPage - 1) * 50) + 1}</span> - <span className="font-medium text-gray-900">{Math.min(currentPage * 50, stats.totalCount)}</span> dari <span className="font-medium text-gray-900">{stats.totalCount}</span> data
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-indigo-600 disabled:opacity-30 disabled:hover:bg-white transition-colors"
+                title="Halaman Sebelumnya"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              
+              <div className="px-4 py-1.5 bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
+                Hal {currentPage} / {stats.totalPages}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === stats.totalPages}
+                className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-indigo-600 disabled:opacity-30 disabled:hover:bg-white transition-colors"
+                title="Halaman Selanjutnya"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
         )}
       </div>

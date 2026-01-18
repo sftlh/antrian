@@ -216,8 +216,9 @@ export default function TPTDashboard() {
     }
   }
 
-  const recallCustomer = () => {
+  const recallCustomer = async () => {
     if (currentQueue) {
+      await updateQueueStatus(currentQueue.id, 'CALLED')
       announceCustomer(currentQueue.queueNumber, currentQueue.customer.name)
     }
   }
@@ -477,13 +478,20 @@ export default function TPTDashboard() {
   const updateQueueStatus = async (queueId: string, status: string) => {
     try {
       const token = localStorage.getItem('auth_token')
+      // Determine counter location to send
+      // Use customLocation state if available
+      const counterToSend = customLocation || 'Loket TPT' 
+      
       await fetch(`/api/queues/${queueId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ 
+          status,
+          counter: counterToSend
+        })
       })
     } catch (error) {
       console.error('Failed to update queue status:', error)

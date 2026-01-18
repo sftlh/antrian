@@ -41,7 +41,9 @@ export async function GET(request: NextRequest) {
         },
         createdAt: true,
         calledAt: true,
-        startedAt: true
+        startedAt: true,
+        updatedAt: true,
+        counter: true
       },
       orderBy: [
         { priorityLevel: 'desc' },
@@ -88,6 +90,7 @@ export async function GET(request: NextRequest) {
       priorityLevel: queue.priorityLevel,
       customerName: queue.customer.name,
       customerNpwp: queue.customer.npwp,
+      counter: queue.counter,
       createdAt: queue.createdAt.toISOString(),
       calledAt: queue.calledAt?.toISOString(),
       startedAt: queue.startedAt?.toISOString()

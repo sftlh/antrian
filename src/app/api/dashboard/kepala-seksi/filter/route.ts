@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
       },
       include: {
         customer: true,
-        calledByUser: true
+        calledByUser: true,
+        escalatedToUser: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -170,15 +171,26 @@ export async function POST(request: NextRequest) {
         customerNpwp: q.customer?.npwp || '',
         customerPhone: q.customer?.phone || null,
         calledBy: q.calledBy,
-        calledById: q.calledBy,
+        calledByName: q.calledByUser?.name || null,
         calledAt: q.calledAt?.toISOString() || null,
         startedAt: q.startedAt?.toISOString() || null,
+        completedAt: q.completedAt?.toISOString() || null,
+        cancelledAt: q.cancelledAt?.toISOString() || null,
+        serviceDuration: q.serviceDuration,
         notes: q.notes,
+        internalNotes: q.internalNotes,
         rating: q.rating,
         feedback: q.feedback,
+        neatnessRating: q.neatnessRating,
+        materialMasteryRating: q.materialMasteryRating,
+        communicationRating: q.communicationRating,
         createdAt: q.createdAt.toISOString(),
+        escalatedTo: q.escalatedTo,
+        escalatedToName: q.escalatedToUser?.name || null,
         escalatedAt: q.escalatedAt?.toISOString() || null,
-        escalatedReason: q.escalatedReason
+        escalatedReason: q.escalatedReason,
+        serviceOrder: q.serviceOrder,
+        category: q.serviceCategory, // Added category
       }))
     })
 

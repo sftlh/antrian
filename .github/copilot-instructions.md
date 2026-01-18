@@ -20,11 +20,34 @@ This is a queue management system for Indonesian tax service centers with the fo
 - Prisma ORM
 - JWT Authentication
 
+## Architecture
+- **App Router Structure**: API routes in `src/app/api/`, pages in `src/app/`, components in `src/components/`
+- **Authentication**: JWT tokens stored in localStorage, verified server-side in API routes using `verifyToken` from `src/lib/auth/utils.ts`
+- **Database Access**: Singleton Prisma client exported from `src/lib/prisma.ts`
+- **State Management**: Client-side auth state with React Context in `src/lib/auth/context.tsx`, wrapped in `src/components/providers.tsx`
+
 ## Database Schema
-- Users (roles: RECEPTIONIST, HELPDESK, TPT, KEPALA_SEKSI)
-- Customers/Taxpayers (NPWP, name, interests)
-- Queues (queue number, service type, status, timestamps)
-- QueueAssignments (customer-queue relationships)
+- **Users** (roles: RECEPTIONIST, HELPDESK, TPT, KEPALA_SEKSI) - see `prisma/schema.prisma`
+- **Customers/Taxpayers** (NPWP, name, interests)
+- **Queues** (queue number, service type, status, timestamps, ratings, escalation)
+- **QueueCounters** (daily counters for queue numbering)
+- **ServiceTemplates** (reusable service descriptions)
+- **Announcements** (public notices)
+
+## Key Patterns
+- **API Routes**: Authenticate requests with Bearer token, use Prisma for DB operations. Example: `src/app/api/auth/login/route.ts`
+- **Queue Numbering**: Increment `QueueCounter` for each service type daily, format as "H001" for Helpdesk
+- **Status Tracking**: Update `Queue.status` through lifecycle (WAITING → CALLED → IN_PROGRESS → COMPLETED)
+- **Escalation**: For BOTH services, create sequence with `parentQueueId` and `serviceOrder`
+- **Validation**: Use Zod schemas for input validation (currently minimal, expand in `src/lib/validations.ts`)
+- **Components**: Client components use 'use client', access auth via `useAuth()` hook
+
+## Development Workflow
+- **Start Server**: `npm run dev` (runs on port 3003)
+- **Database Setup**: `npx prisma migrate dev` for schema changes, `npx prisma db seed` for test data
+- **View Data**: `npx prisma studio` to inspect/edit database
+- **Build**: `npm run build` for production build
+- **Test Users**: receptionist/password123, helpdesk/password123, etc.
 
 ## Key Features
 - Role-based authentication and authorization

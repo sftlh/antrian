@@ -347,6 +347,15 @@ export default function HelpdeskDashboard() {
     }
   }
 
+  const handleRecall = async () => {
+    if (currentQueue) {
+      // Update status to 'CALLED' to trigger display announcement
+      await updateQueueStatus(currentQueue.id, 'CALLED')
+      // Local announcement
+      announceCustomer(currentQueue.queueNumber, currentQueue.customer.name)
+    }
+  }
+
   const completeService = async () => {
     if (!currentQueue) return
 
@@ -392,13 +401,19 @@ export default function HelpdeskDashboard() {
   const updateQueueStatus = async (queueId: string, status: string) => {
     try {
       const token = localStorage.getItem('auth_token')
+      // Use customLocation state if available
+      const counterToSend = customLocation || 'Loket Helpdesk'
+
       await fetch(`/api/queues/${queueId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ 
+          status,
+          counter: counterToSend 
+        })
       })
     } catch (error) {
       console.error('Failed to update queue status:', error)
@@ -558,7 +573,7 @@ export default function HelpdeskDashboard() {
 
                     <div className="flex space-x-3">
                       <button
-                        onClick={() => currentQueue && announceCustomer(currentQueue.queueNumber, currentQueue.customer.name)}
+                        onClick={handleRecall}
                         className="flex-1 bg-yellow-600 text-white py-2 px-4 rounded hover:bg-yellow-700"
                       >
                         📢 Panggil Ulang
