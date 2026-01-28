@@ -54,6 +54,13 @@ export interface QueueItem {
   customerName: string
   customerNpwp: string
   customerPhone: string | null
+  customerContacts?: {
+    id: string
+    name: string
+    phone: string
+    email: string | null
+    idCardScan: string | null
+  }[]
   calledBy: string | null
   calledById: string | null
   calledAt: string | null

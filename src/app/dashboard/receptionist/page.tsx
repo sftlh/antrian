@@ -5,6 +5,14 @@ import { useAuth } from '@/lib/auth/context'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
+interface Contact {
+  id: string
+  name: string
+  email?: string
+  phone?: string
+  idCardScan?: string
+}
+
 interface Customer {
   id: string
   npwp: string
@@ -12,6 +20,7 @@ interface Customer {
   interests: string
   phone?: string
   email?: string
+  contacts?: Contact[]
 }
 
 interface QueueStats {
@@ -34,9 +43,18 @@ export default function ReceptionistDashboard() {
     phone: '',
     email: '',
     serviceType: 'HELPDESK' as 'HELPDESK' | 'TPT' | 'BOTH',
-    serviceOrder: 'HELPDESK_FIRST' as 'HELPDESK_FIRST' | 'TPT_FIRST'
+    serviceOrder: 'HELPDESK_FIRST' as 'HELPDESK_FIRST' | 'TPT_FIRST',
+    contact: {
+      name: '',
+      email: '',
+      phone: '',
+      idCardScan: ''
+    }
   })
+  const [uploading, setUploading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [registerSearchQuery, setRegisterSearchQuery] = useState('')
+  const [registerSearchResults, setRegisterSearchResults] = useState<Customer[]>([])
   const [searchResults, setSearchResults] = useState<Customer[]>([])
   const [queueStats, setQueueStats] = useState<QueueStats>({
     helpdesk: { waiting: 0, inProgress: 0, completed: 0 },
@@ -48,6 +66,7 @@ export default function ReceptionistDashboard() {
   const [message, setMessage] = useState('')
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({})
   const [existingCustomer, setExistingCustomer] = useState<Customer | null>(null)
+  const [existingContacts, setExistingContacts] = useState<Contact[]>([])
   const [customerHistory, setCustomerHistory] = useState<any[]>([])
   const [showCustomerHistory, setShowCustomerHistory] = useState(false)
   const [hasActiveQueue, setHasActiveQueue] = useState(false)
@@ -176,10 +195,14 @@ export default function ReceptionistDashboard() {
             const customerDetails = await customerDetailsResponse.json()
             setCustomerHistory(customerDetails.serviceHistory || [])
             setHasActiveQueue(customerDetails.activeQueues && customerDetails.activeQueues.length > 0)
+            // Fix: contacts data is nested inside customer object in the response
+            const contacts = customerDetails.customer?.contacts || customerDetails.contacts || customer.contacts || []
+            setExistingContacts(contacts)
           }
         } else {
           setExistingCustomer(null)
           setCustomerHistory([])
+          setExistingContacts([])
           setHasActiveQueue(false)
         }
       }
@@ -260,6 +283,46 @@ export default function ReceptionistDashboard() {
     }
   }
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+
+    const file = e.target.files[0]
+    const formData = new FormData()
+    formData.append('file', file)
+
+    setUploading(true)
+    try {
+      const token = localStorage.getItem('auth_token')
+      const response = await fetch('/api/upload/id-card', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCustomerData(prev => ({
+          ...prev,
+          contact: {
+            ...prev.contact,
+            idCardScan: data.url
+          }
+        }))
+        setMessage('Foto KTP berhasil diupload')
+      } else {
+        const error = await response.json()
+        setMessage(`Gagal upload: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      setMessage('Terjadi kesalahan saat upload file')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const handleNpwpChange = (value: string) => {
     const formatted = formatNPWP(value)
     setCustomerData(prev => ({ ...prev, npwp: formatted }))
@@ -328,10 +391,12 @@ export default function ReceptionistDashboard() {
           phone: '',
           email: '',
           serviceType: 'HELPDESK',
-          serviceOrder: 'HELPDESK_FIRST'
+          serviceOrder: 'HELPDESK_FIRST',
+          contact: { name: '', email: '', phone: '', idCardScan: '' }
         })
         setExistingCustomer(null)
         setCustomerHistory([])
+        setExistingContacts([])
         setHasActiveQueue(false)
         fetchQueueStats()
       } else {
@@ -362,6 +427,47 @@ export default function ReceptionistDashboard() {
     } catch (error) {
       console.error('Search failed:', error)
     }
+  }
+
+  const handleRegisterSearch = async (query: string) => {
+    setRegisterSearchQuery(query)
+    if (query.length < 2) {
+      setRegisterSearchResults([])
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('auth_token')
+      const response = await fetch(`/api/customers?q=${encodeURIComponent(query)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setRegisterSearchResults(data.customers)
+      }
+    } catch (error) {
+      console.error('Register search failed:', error)
+    }
+  }
+
+  const selectRegisterCustomer = (customer: Customer) => {
+    setCustomerData(prev => ({
+      ...prev,
+      npwp: customer.npwp,
+      name: customer.name,
+      interests: customer.interests || '',
+      phone: customer.phone || '',
+      email: customer.email || ''
+    }))
+    
+    // Set contacts immediately if available from search result
+    if (customer.contacts && customer.contacts.length > 0) {
+      setExistingContacts(customer.contacts)
+    }
+    
+    setRegisterSearchQuery('')
+    setRegisterSearchResults([])
+    checkExistingCustomer(customer.npwp) // This will trigger loading details & contacts (refreshing recent history)
   }
 
   const selectCustomer = (customer: Customer) => {
@@ -524,6 +630,32 @@ export default function ReceptionistDashboard() {
             <div className="bg-white shadow rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Pendaftaran Antrian Baru</h2>
 
+              {/* Autocomplete Search */}
+              <div className="mb-6 relative">
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Cari Wajib Pajak (Nama / NPWP)</label>
+                 <input
+                    type="text"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm p-2 border"
+                    placeholder="Ketik nama atau NPWP untuk mencari..."
+                    value={registerSearchQuery}
+                    onChange={(e) => handleRegisterSearch(e.target.value)}
+                 />
+                 {registerSearchResults.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                        {registerSearchResults.map((customer) => (
+                             <div
+                                key={customer.id}
+                                className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-green-50 border-b last:border-0"
+                                onClick={() => selectRegisterCustomer(customer)}
+                             >
+                                 <div className="font-medium">{customer.name}</div>
+                                 <div className="text-gray-500 text-xs">NPWP: {customer.npwp}</div>
+                             </div>
+                        ))}
+                    </div>
+                 )}
+              </div>
+
               {message && (
                 <div className={`mb-4 p-4 rounded-md ${message.includes('Berhasil') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
                   {message}
@@ -618,7 +750,7 @@ export default function ReceptionistDashboard() {
 
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                      Nama Lengkap <span className="text-red-500">*</span>
+                      Nama Wajib Pajak (Institusi/Perorangan) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -642,34 +774,8 @@ export default function ReceptionistDashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                      Nomor Telepon
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                      value={customerData.phone}
-                      onChange={(e) => setCustomerData({...customerData, phone: e.target.value})}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                      value={customerData.email}
-                      onChange={(e) => setCustomerData({...customerData, email: e.target.value})}
-                    />
-                  </div>
-                </div>
-
+                {/* Info telepon dan email WP dihapus, dipindahkan fokus ke kontak/penanggung jawab */}
+                
                 <div>
                   <label htmlFor="interests" className="block text-sm font-medium text-gray-700">
                     Kebutuhan/Keluhan
@@ -682,6 +788,106 @@ export default function ReceptionistDashboard() {
                     value={customerData.interests}
                     onChange={(e) => setCustomerData({...customerData, interests: e.target.value})}
                   />
+                </div>
+
+                {/* Contact Person Section */}
+                <div className="border-t border-gray-200 pt-4 mt-4 mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Informasi Kontak / Penanggung Jawab</h3>
+                    
+                    {existingContacts.length > 0 && (
+                        <div className="mb-4 bg-blue-50 p-4 rounded-md">
+                            <h4 className="text-sm font-medium text-blue-800 mb-2">Kontak Terdaftar:</h4>
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {existingContacts.map((contact, idx) => (
+                                    <div key={idx} className="text-sm text-blue-700 border-b border-blue-200 pb-2 last:border-0 hover:bg-blue-100 p-2 rounded cursor-pointer"
+                                         onClick={() => setCustomerData(prev => ({
+                                             ...prev,
+                                             contact: {
+                                                 name: contact.name,
+                                                 email: contact.email || '',
+                                                 phone: contact.phone || '',
+                                                 idCardScan: contact.idCardScan || ''
+                                             }
+                                         }))}
+                                         title="Klik untuk gunakan data ini"
+                                    >
+                                         <div className="font-bold">{contact.name}</div>
+                                         <div className="text-xs">
+                                             {contact.phone && <span>HP: {contact.phone}</span>}
+                                             {contact.email && <span> • Email: {contact.email}</span>}
+                                         </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-xs text-blue-600 mt-2">* Klik kontak di atas untuk mengisi form di bawah otomatis</p>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                             <label className="block text-sm font-medium text-gray-700">Nama Kontak</label>
+                             <input 
+                                type="text"
+                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                                value={customerData.contact.name}
+                                onChange={(e) => setCustomerData({...customerData, contact: {...customerData.contact, name: e.target.value}})}
+                                placeholder="Nama penanggung jawab"
+                             />
+                        </div>
+                        <div>
+                             <label className="block text-sm font-medium text-gray-700">No HP Kontak</label>
+                             <input 
+                                type="text"
+                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                                value={customerData.contact.phone}
+                                onChange={(e) => setCustomerData({...customerData, contact: {...customerData.contact, phone: e.target.value}})}
+                                placeholder="Nomor HP"
+                             />
+                        </div>
+                         <div>
+                             <label className="block text-sm font-medium text-gray-700">Email Kontak (Opsional)</label>
+                             <input 
+                                type="email"
+                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                                value={customerData.contact.email}
+                                onChange={(e) => setCustomerData({...customerData, contact: {...customerData.contact, email: e.target.value}})}
+                                placeholder="Email"
+                             />
+                        </div>
+                         <div>
+                             <label className="block text-sm font-medium text-gray-700">Scan KTP</label>
+                             <div className="mt-1 flex items-center gap-4">
+                               <input 
+                                  type="file"
+                                  accept="image/*,application/pdf"
+                                  onChange={handleFileUpload}
+                                  className="block w-full text-sm text-gray-500
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-md file:border-0
+                                    file:text-sm file:font-semibold
+                                    file:bg-green-50 file:text-green-700
+                                    hover:file:bg-green-100"
+                                  disabled={uploading}
+                               />
+                               {uploading && <span className="text-sm text-gray-500">Mengupload...</span>}
+                             </div>
+                             {customerData.contact.idCardScan && (
+                               <div className="mt-2 text-sm text-green-600 flex items-center gap-2">
+                                 <span>✓ File terupload</span>
+                                 <a href={customerData.contact.idCardScan} target="_blank" rel="noopener noreferrer" className="underline hover:text-green-800">
+                                   Lihat
+                                 </a>
+                                 <button 
+                                   type="button" 
+                                   onClick={() => setCustomerData({...customerData, contact: {...customerData.contact, idCardScan: ''}})}
+                                   className="text-red-500 text-xs hover:text-red-700"
+                                 >
+                                   Hapus
+                                 </button>
+                               </div>
+                             )}
+                        </div>
+                    </div>
                 </div>
 
                 <div>

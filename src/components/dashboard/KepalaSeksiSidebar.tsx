@@ -30,6 +30,11 @@ export function KepalaSeksiSidebar() {
       icon: Activity
     },
     {
+      title: 'Kontak WP',
+      href: '/dashboard/kepala-seksi/kontak',
+      icon: Users
+    },
+    {
       title: 'Performa Staff',
       href: '/dashboard/kepala-seksi/staff',
       icon: Users

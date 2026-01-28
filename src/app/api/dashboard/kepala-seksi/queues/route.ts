@@ -10,6 +10,10 @@ type QueueWithRelations = Prisma.QueueGetPayload<{
         name: true
         npwp: true
         phone: true
+        contacts: {
+           orderBy: { createdAt: 'desc' }
+           take: 5
+        }
       }
     }
     calledByUser: {
@@ -60,7 +64,11 @@ export async function GET(request: NextRequest) {
           select: {
             name: true,
             npwp: true,
-            phone: true
+            phone: true,
+            contacts: {
+                orderBy: { createdAt: 'desc' },
+                take: 5
+            }
           }
         },
         calledByUser: {
@@ -91,7 +99,11 @@ export async function GET(request: NextRequest) {
           select: {
             name: true,
             npwp: true,
-            phone: true
+            phone: true,
+            contacts: {
+                orderBy: { createdAt: 'desc' },
+                take: 5
+            }
           }
         },
         calledByUser: {
@@ -126,6 +138,7 @@ export async function GET(request: NextRequest) {
       customerName: queue.customer.name,
       customerNpwp: queue.customer.npwp,
       customerPhone: queue.customer.phone,
+      customerContacts: queue.customer.contacts,
       calledBy: queue.calledByUser?.name || null,
       calledById: queue.calledBy,
       calledAt: queue.calledAt,
@@ -143,6 +156,7 @@ export async function GET(request: NextRequest) {
       customerName: queue.customer.name,
       customerNpwp: queue.customer.npwp,
       customerPhone: queue.customer.phone,
+      customerContacts: queue.customer.contacts,
       calledBy: queue.calledByUser?.name || null,
       calledById: queue.calledBy,
       calledAt: queue.calledAt,

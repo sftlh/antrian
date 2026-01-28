@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    const { npwp, name, interests, phone, email, serviceType, serviceOrder } = await request.json()
+    const { npwp, name, interests, phone, email, serviceType, serviceOrder, contact } = await request.json()
 
     // Validate required fields
     if (!npwp || !name || !serviceType) {
@@ -47,8 +47,48 @@ export async function POST(request: NextRequest) {
           interests: interests || '',
           phone: phone || null,
           email: email || null,
+          contacts: contact ? {
+            create: {
+              name: contact.name,
+              email: contact.email || null,
+              phone: contact.phone || null,
+              idCardScan: contact.idCardScan || null
+            }
+          } : undefined
         }
       })
+    } else if (contact && contact.name) {
+      // Check if duplicate contact already exists
+      const existingContact = await prisma.contact.findFirst({
+        where: {
+          customerId: customer.id,
+          name: { equals: contact.name, mode: 'insensitive' },
+          phone: contact.phone || undefined
+        }
+      })
+
+      // Only create new contact if it doesn't match an existing one
+      if (!existingContact) {
+        await prisma.contact.create({
+          data: {
+            customerId: customer.id,
+            name: contact.name,
+            email: contact.email || null,
+            phone: contact.phone || null,
+            idCardScan: contact.idCardScan || null
+          }
+        })
+      } else {
+        // Update existing contact scan if it changed
+        if (contact.idCardScan !== undefined && contact.idCardScan !== existingContact.idCardScan) {
+           await prisma.contact.update({
+             where: { id: existingContact.id },
+             data: {
+               idCardScan: contact.idCardScan || null
+             }
+           })
+        }
+      }
     }
 
     // Handle "BOTH" service type logic - create single sequential queue with K2 prefix
@@ -231,25 +271,41 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const query = searchParams.get('q')
+    const query = searchParams.get('q') || ''
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+    const skip = (page - 1) * limit
 
-    if (!query) {
-      return NextResponse.json({ customers: [] })
-    }
+    const whereClause: Prisma.CustomerWhereInput = query ? {
+      OR: [
+        { npwp: { contains: query.replace(/[\.\-]/g, '') } },
+        { name: { contains: query, mode: 'insensitive' as Prisma.QueryMode } }
+      ]
+    } : {}
 
-    // Search customers by NPWP or name
-    const customers = await prisma.customer.findMany({
-      where: {
-        OR: [
-          { npwp: { contains: query.replace(/[\.\-]/g, '') } },
-          { name: { contains: query, mode: 'insensitive' } }
-        ]
-      },
-      take: 10,
-      orderBy: { name: 'asc' }
+    // Search customers by NPWP or name with pagination
+    const [customers, total] = await Promise.all([
+      prisma.customer.findMany({
+        where: whereClause,
+        include: {
+          contacts: true
+        },
+        take: limit,
+        skip: skip,
+        orderBy: { name: 'asc' }
+      }),
+      prisma.customer.count({ where: whereClause })
+    ])
+
+    return NextResponse.json({ 
+      customers,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
     })
-
-    return NextResponse.json({ customers })
 
   } catch (error) {
     console.error('Customer search error:', error)

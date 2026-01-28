@@ -16,6 +16,8 @@ services:
       TZ: Asia/Jakarta
     ports:
       - 3003:3003
+    volumes:
+      - ./public/uploads:/usr/src/app/public/uploads
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to

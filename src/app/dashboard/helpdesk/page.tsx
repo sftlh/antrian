@@ -14,6 +14,12 @@ interface Queue {
     id: string
     name: string
     npwp: string
+    contacts?: {
+      name: string
+      email?: string
+      phone?: string
+      idCardScan?: string
+    }[]
   }
   status: string
   createdAt: string
@@ -37,7 +43,7 @@ interface ServiceTemplate {
 export default function HelpdeskDashboard() {
   const { user, isLoading, logout } = useAuth()
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'service' | 'history' | 'statistics'>('service')
+  const [activeTab, setActiveTab] = useState<'service' | 'history' | 'statistics' | 'contacts'>('service')
   const [queues, setQueues] = useState<Queue[]>([])
   const [currentQueue, setCurrentQueue] = useState<Queue | null>(null)
   const [serviceCompleted, setServiceCompleted] = useState(false)
@@ -119,6 +125,14 @@ export default function HelpdeskDashboard() {
   const [selectedCustomerForHistory, setSelectedCustomerForHistory] = useState<any>(null)
   const [historySearch, setHistorySearch] = useState('')
   const [historyFilter, setHistoryFilter] = useState('all')
+
+  // Contact Menu State
+  const [contactMenuSearch, setContactMenuSearch] = useState('')
+  const [contactMenuResults, setContactMenuResults] = useState<any[]>([])
+  const [isSearchingContacts, setIsSearchingContacts] = useState(false)
+  const [contactPage, setContactPage] = useState(1)
+  const [contactTotalPages, setContactTotalPages] = useState(1)
+  const [contactTotalItems, setContactTotalItems] = useState(0)
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -244,6 +258,49 @@ export default function HelpdeskDashboard() {
       console.error('Failed to search customers:', error)
     }
   }
+
+  const fetchContacts = async (page: number, query: string = '') => {
+    setIsSearchingContacts(true)
+    try {
+      const token = localStorage.getItem('auth_token')
+      const url = new URL('/api/customers', window.location.origin)
+      if (query) url.searchParams.append('q', query)
+      url.searchParams.append('page', page.toString())
+      url.searchParams.append('limit', '10')
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setContactMenuResults(data.customers || [])
+        if (data.pagination) {
+          setContactPage(data.pagination.page)
+          setContactTotalPages(data.pagination.totalPages)
+          setContactTotalItems(data.pagination.total)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch contacts:', error)
+    } finally {
+      setIsSearchingContacts(false)
+    }
+  }
+
+  const handleContactMenuSearch = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setContactPage(1)
+    await fetchContacts(1, contactMenuSearch)
+  }
+
+  useEffect(() => {
+    if (activeTab === 'contacts') {
+      fetchContacts(1, contactMenuSearch)
+    }
+  }, [activeTab])
 
   const selectCustomerForHistory = async (customer: any) => {
     setSelectedCustomerForHistory(customer)
@@ -501,6 +558,16 @@ export default function HelpdeskDashboard() {
               >
                 📊 Statistik
               </button>
+              <button
+                onClick={() => setActiveTab('contacts')}
+                className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'contacts'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                👥 Kontak WP
+              </button>
             </nav>
           </div>
 
@@ -517,6 +584,30 @@ export default function HelpdeskDashboard() {
                     <div className="space-y-2 mb-4">
                       <p><strong>Nama:</strong> {currentQueue.customer.name}</p>
                       <p><strong>NPWP:</strong> {currentQueue.customer.npwp}</p>
+                      {currentQueue.customer.contacts && currentQueue.customer.contacts.length > 0 && (
+                        <div className="mt-2 text-sm bg-blue-50 p-2 rounded">
+                           <p className="font-semibold text-blue-800 border-b border-blue-200 pb-1 mb-1">Kontak / Penanggung Jawab:</p>
+                           {currentQueue.customer.contacts.map((contact, idx) => (
+                             <div key={idx} className="mb-2 last:mb-0">
+                               <p className="font-medium text-blue-900">{contact.name}</p>
+                               {contact.phone && <p className="text-blue-700">HP: {contact.phone}</p>}
+                               {contact.email && <p className="text-blue-700">Email: {contact.email}</p>}
+                               {contact.idCardScan && (
+                                 <p className="mt-1">
+                                   <a 
+                                      href={contact.idCardScan} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 underline text-xs flex items-center gap-1 hover:text-blue-800"
+                                   >
+                                     📂 Lihat Scan KTP
+                                   </a>
+                                 </p>
+                               )}
+                             </div>
+                           ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Service Category */}
@@ -812,6 +903,150 @@ export default function HelpdeskDashboard() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'contacts' && (
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-6">Daftar Kontak Wajib Pajak</h2>
+              <form onSubmit={handleContactMenuSearch} className="mb-8">
+                 <div className="flex gap-4">
+                    <input
+                      type="text"
+                      className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      placeholder="Cari berdasarkan Nama atau NPWP..."
+                      value={contactMenuSearch}
+                      onChange={(e) => setContactMenuSearch(e.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSearchingContacts}
+                      className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                    >
+                      {isSearchingContacts ? 'Mencari...' : 'Cari'}
+                    </button>
+                 </div>
+              </form>
+
+              <div className="space-y-6">
+                  {contactMenuResults.length > 0 ? (
+                      <>
+                        {contactMenuResults.map((customer) => (
+                          <div key={customer.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                              <div className="flex justify-between items-start mb-4">
+                                  <div>
+                                      <h3 className="text-lg font-bold text-gray-900">{customer.name}</h3>
+                                      <p className="text-sm text-gray-500 font-mono">NPWP: {customer.npwp}</p>
+                                  </div>
+                                  <div className="text-right">
+                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                          Wajib Pajak
+                                      </span>
+                                  </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                      <h4 className="font-medium text-gray-700 mb-2">Kontak Utama</h4>
+                                      <dl className="text-sm text-gray-600 space-y-1">
+                                          {customer.phone && <div className="flex"><dt className="w-20">Telp:</dt><dd>{customer.phone}</dd></div>}
+                                          {customer.email && <div className="flex"><dt className="w-20">Email:</dt><dd>{customer.email}</dd></div>}
+                                          {customer.interests && <div className="flex"><dt className="w-20">Kepentingan:</dt><dd>{customer.interests}</dd></div>}
+                                      </dl>
+                                  </div>
+                                  
+                                  <div>
+                                      <h4 className="font-medium text-gray-700 mb-2">Daftar Kontak / PIC ({customer.contacts?.length || 0})</h4>
+                                      {customer.contacts && customer.contacts.length > 0 ? (
+                                          <div className="space-y-3">
+                                              {customer.contacts.map((contact: any, idx: number) => (
+                                                  <div key={contact.id || idx} className="bg-white p-3 rounded border border-gray-200 text-sm">
+                                                      <div className="font-medium text-gray-900">{contact.name}</div>
+                                                      <div className="text-gray-500 mt-1 space-y-0.5">
+                                                          {contact.phone && <div>📞 {contact.phone}</div>}
+                                                          {contact.email && <div>✉️ {contact.email}</div>}
+                                                      </div>
+                                                      {contact.idCardScan && (
+                                                           <a 
+                                                              href={contact.idCardScan} 
+                                                              target="_blank" 
+                                                              rel="noopener noreferrer"
+                                                              className="mt-2 text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1"
+                                                           >
+                                                              📂 Lihat Scan KTP
+                                                           </a>
+                                                      )}
+                                                  </div>
+                                              ))}
+                                          </div>
+                                      ) : (
+                                          <p className="text-sm text-gray-400 italic">Tidak ada kontak tambahan.</p>
+                                      )}
+                                  </div>
+                              </div>
+                          </div>
+                      ))}
+
+                      {/* Pagination Controls */}
+                      <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
+                        <div className="flex flex-1 justify-between sm:hidden">
+                          <button
+                            onClick={() => fetchContacts(contactPage - 1, contactMenuSearch)}
+                            disabled={contactPage <= 1}
+                            className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${contactPage <= 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            Previous
+                          </button>
+                          <button
+                            onClick={() => fetchContacts(contactPage + 1, contactMenuSearch)}
+                            disabled={contactPage >= contactTotalPages}
+                            className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 ${contactPage >= contactTotalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            Next
+                          </button>
+                        </div>
+                        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-sm text-gray-700">
+                              Menampilkan <span className="font-medium">{Math.min(((contactPage - 1) * 10) + 1, contactTotalItems)}</span> sampai <span className="font-medium">{Math.min(contactPage * 10, contactTotalItems)}</span> dari <span className="font-medium">{contactTotalItems}</span> hasil
+                            </p>
+                          </div>
+                          <div>
+                            <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                              <button
+                                onClick={() => fetchContacts(contactPage - 1, contactMenuSearch)}
+                                disabled={contactPage <= 1}
+                                className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${contactPage <= 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              >
+                                <span className="sr-only">Previous</span>
+                                ←
+                              </button>
+                              
+                              <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">
+                                {contactPage}
+                              </span>
+
+                              <button
+                                onClick={() => fetchContacts(contactPage + 1, contactMenuSearch)}
+                                disabled={contactPage >= contactTotalPages}
+                                className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${contactPage >= contactTotalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              >
+                                <span className="sr-only">Next</span>
+                                →
+                              </button>
+                            </nav>
+                          </div>
+                        </div>
+                      </div>
+                      </>
+                  ) : (
+                      !isSearchingContacts && (
+                          <div className="text-center py-12 text-gray-500">
+                              {contactMenuSearch ? 'Tidak ditemukan data Wajib Pajak dengan kata kunci tersebut.' : 'Belum ada data Wajib Pajak.'}
+                          </div>
+                      )
+                  )}
               </div>
             </div>
           )}

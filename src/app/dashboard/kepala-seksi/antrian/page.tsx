@@ -136,6 +136,28 @@ export default function AntrianPage() {
                         <div>
                           <div className="font-medium text-gray-900">{queue.customerName}</div>
                           <div className="text-xs text-gray-400 font-mono">{queue.customerNpwp}</div>
+                          {queue.customerContacts && queue.customerContacts.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              {queue.customerContacts.map((contact, idx) => (
+                                <div key={idx} className="flex flex-col text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
+                                   <div className="font-semibold text-gray-700">{contact.name}</div>
+                                   <div className="mt-1 flex flex-col gap-1">
+                                     {contact.phone && (
+                                       <div className="flex items-center gap-1">
+                                         <span className="text-gray-400">Tel:</span>
+                                         <span>{contact.phone}</span>
+                                       </div>
+                                     )}
+                                     {contact.idCardScan && (
+                                       <a href={contact.idCardScan} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1">
+                                         Lihat KTP
+                                       </a>
+                                     )}
+                                   </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>

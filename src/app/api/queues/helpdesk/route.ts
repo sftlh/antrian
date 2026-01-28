@@ -45,8 +45,13 @@ export async function GET(request: NextRequest) {
       include: {
         customer: {
           select: {
+            id: true,
             name: true,
-            npwp: true
+            npwp: true,
+            contacts: {
+                orderBy: { createdAt: 'desc' },
+                take: 5
+            }
           }
         }
       },

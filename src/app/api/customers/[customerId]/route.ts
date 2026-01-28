@@ -24,7 +24,10 @@ export async function GET(
 
     // Get customer details
     const customer = await prisma.customer.findUnique({
-      where: { id: customerId }
+      where: { id: customerId },
+      include: {
+        contacts: true
+      }
     })
 
     if (!customer) {
