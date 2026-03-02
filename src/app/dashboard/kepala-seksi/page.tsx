@@ -12,8 +12,9 @@ export default function KepalaSeksiDashboard() {
   const [stats, setStats] = useState<QueueStats>({
     helpdesk: { waiting: 0, inProgress: 0, completed: 0, escalated: 0, cancelled: 0 },
     tpt: { waiting: 0, inProgress: 0, completed: 0, escalated: 0, cancelled: 0 },
+    spt: { waiting: 0, inProgress: 0, completed: 0, escalated: 0, cancelled: 0 },
     total: { waiting: 0, inProgress: 0, completed: 0, escalated: 0, cancelled: 0 },
-    staffPerformance: { helpdesk: [], tpt: [] },
+    staffPerformance: { helpdesk: [], tpt: [], spt: [] },
     escalatedCases: []
   })
   
@@ -81,11 +82,11 @@ export default function KepalaSeksiDashboard() {
     </div>
   )
 
-  const ServiceStats = ({ title, data, type }: { title: string, data: any, type: 'helpdesk' | 'tpt' }) => (
+  const ServiceStats = ({ title, data, type }: { title: string, data: any, type: 'helpdesk' | 'tpt' | 'spt' }) => (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
       <div className="flex items-center justify-between mb-6">
         <h3 className="font-bold text-gray-800 flex items-center gap-2">
-          <span className={`w-2 h-8 rounded-full ${type === 'helpdesk' ? 'bg-blue-500' : 'bg-purple-500'}`}></span>
+          <span className={`w-2 h-8 rounded-full ${type === 'helpdesk' ? 'bg-blue-500' : type === 'tpt' ? 'bg-purple-500' : 'bg-green-500'}`}></span>
           {title}
         </h3>
         <div className="flex gap-2 text-sm text-gray-500">
@@ -204,6 +205,7 @@ export default function KepalaSeksiDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ServiceStats title="Layanan Helpdesk" data={stats.helpdesk} type="helpdesk" />
         <ServiceStats title="Layanan TPT" data={stats.tpt} type="tpt" />
+        <ServiceStats title="Layanan SPT" data={stats.spt} type="spt" />
       </div>
 
       {/* Alert / Escalations */}

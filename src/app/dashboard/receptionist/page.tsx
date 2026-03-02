@@ -26,6 +26,7 @@ interface Customer {
 interface QueueStats {
   helpdesk: { waiting: number; inProgress: number; completed: number }
   tpt: { waiting: number; inProgress: number; completed: number }
+  spt: { waiting: number; inProgress: number; completed: number }
   totalToday: number
   avgWaitTime: number
 }
@@ -59,6 +60,7 @@ export default function ReceptionistDashboard() {
   const [queueStats, setQueueStats] = useState<QueueStats>({
     helpdesk: { waiting: 0, inProgress: 0, completed: 0 },
     tpt: { waiting: 0, inProgress: 0, completed: 0 },
+    spt: { waiting: 0, inProgress: 0, completed: 0 },
     totalToday: 0,
     avgWaitTime: 0
   })
@@ -493,22 +495,25 @@ export default function ReceptionistDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard Resepsionis</h1>
+          <div className="flex justify-between items-center mb-8 bg-white/60 backdrop-blur-md p-6 rounded-2xl shadow-sm border border-white/50">
+            <div>
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-cyan-500">Dashboard Resepsionis</h1>
+              <div className="h-1 w-20 bg-gradient-to-r from-indigo-600 to-cyan-500 rounded-full mt-2"></div>
+            </div>
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
-                Selamat datang, {user.name}
+              <div className="text-sm font-medium text-gray-700 bg-white/80 px-4 py-2 rounded-full shadow-sm border border-gray-100">
+                Selamat datang, <span className="font-bold text-indigo-600">{user.name}</span>
               </div>
               <button
                 onClick={() => {
                   logout()
                   router.push('/')
                 }}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-full text-white bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 transform hover:scale-105"
               >
                 Keluar
               </button>
@@ -516,12 +521,12 @@ export default function ReceptionistDashboard() {
           </div>
 
           {/* Statistics Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <div className="bg-white/60 backdrop-blur-md overflow-hidden shadow-sm hover:shadow-md ring-1 ring-black/5 rounded-2xl relative transition-all duration-300 transform hover:-translate-y-1">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                    <div className="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center">
                       <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
@@ -537,7 +542,7 @@ export default function ReceptionistDashboard() {
               </div>
             </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="bg-white/60 backdrop-blur-md overflow-hidden shadow-sm hover:shadow-md ring-1 ring-black/5 rounded-2xl relative transition-all duration-300 transform hover:-translate-y-1">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
@@ -557,11 +562,11 @@ export default function ReceptionistDashboard() {
               </div>
             </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="bg-white/60 backdrop-blur-md overflow-hidden shadow-sm hover:shadow-md ring-1 ring-black/5 rounded-2xl relative transition-all duration-300 transform hover:-translate-y-1">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                    <div className="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center">
                       <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -577,31 +582,51 @@ export default function ReceptionistDashboard() {
               </div>
             </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
+              <div className="bg-white/60 backdrop-blur-md overflow-hidden shadow-sm hover:shadow-md ring-1 ring-black/5 rounded-2xl relative transition-all duration-300 transform hover:-translate-y-1">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">TPT Menunggu</dt>
+                        <dd className="text-lg font-medium text-gray-900">{queueStats.tpt.waiting}</dd>
+                      </dl>
                     </div>
                   </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">TPT Menunggu</dt>
-                      <dd className="text-lg font-medium text-gray-900">{queueStats.tpt.waiting}</dd>
-                    </dl>
+                </div>
+              </div>
+
+              <div className="bg-white/60 backdrop-blur-md overflow-hidden shadow-sm hover:shadow-md ring-1 ring-black/5 rounded-2xl relative transition-all duration-300 transform hover:-translate-y-1">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">SPT Menunggu</dt>
+                        <dd className="text-lg font-medium text-gray-900">{queueStats.spt.waiting}</dd>
+                      </dl>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
           {/* Navigation Tabs */}
-          <div className="mb-6">
-            <nav className="flex space-x-8" aria-label="Tabs">
+          <div className="mb-8">
+            <nav className="flex space-x-2 bg-white/50 backdrop-blur-md p-1.5 rounded-2xl border border-white/60 shadow-sm overflow-x-auto overflow-y-hidden" aria-label="Tabs">
               {[
                 { id: 'register', name: 'Daftar Antrian', icon: '👤' },
                 { id: 'search', name: 'Cari Wajib Pajak', icon: '🔍' },
@@ -612,13 +637,13 @@ export default function ReceptionistDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+                  className={`whitespace-nowrap py-2.5 px-4 font-medium text-sm rounded-xl transition-all duration-200 flex-1 flex items-center justify-center min-w-[150px] ${
                     activeTab === tab.id
-                      ? 'border-green-500 text-green-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'bg-white text-indigo-600 shadow-md ring-1 ring-black/5 transform scale-[1.02]'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60 hover:shadow-sm'
                   }`}
                 >
-                  <span className="mr-2">{tab.icon}</span>
+                  <span className="mr-2 text-lg">{tab.icon}</span>
                   {tab.name}
                 </button>
               ))}
@@ -627,15 +652,15 @@ export default function ReceptionistDashboard() {
 
           {/* Tab Content */}
           {activeTab === 'register' && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Pendaftaran Antrian Baru</h2>
+            <div className="bg-white/80 backdrop-blur-xl shadow-xl ring-1 ring-black/5 rounded-3xl border border-white/50 p-6">
+              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 mb-6">Pendaftaran Antrian Baru</h2>
 
               {/* Autocomplete Search */}
               <div className="mb-6 relative">
                  <label className="block text-sm font-medium text-gray-700 mb-1">Cari Wajib Pajak (Nama / NPWP)</label>
                  <input
                     type="text"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm p-2 border"
+                    className="block w-full rounded-xl border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md px-4 py-3 bg-white hover:bg-gray-50 transition-colors border"
                     placeholder="Ketik nama atau NPWP untuk mencari..."
                     value={registerSearchQuery}
                     onChange={(e) => handleRegisterSearch(e.target.value)}
@@ -645,7 +670,7 @@ export default function ReceptionistDashboard() {
                         {registerSearchResults.map((customer) => (
                              <div
                                 key={customer.id}
-                                className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-green-50 border-b last:border-0"
+                                className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-indigo-50 border-b last:border-0"
                                 onClick={() => selectRegisterCustomer(customer)}
                              >
                                  <div className="font-medium">{customer.name}</div>
@@ -657,7 +682,7 @@ export default function ReceptionistDashboard() {
               </div>
 
               {message && (
-                <div className={`mb-4 p-4 rounded-md ${message.includes('Berhasil') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                <div className={`mb-4 p-4 rounded-md ${message.includes('Berhasil') ? 'bg-indigo-50 text-indigo-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
                   {message}
                 </div>
               )}
@@ -674,7 +699,7 @@ export default function ReceptionistDashboard() {
                       required
                       maxLength={20}
                       placeholder="XX.XXX.XXX.X-XXX.XXX"
-                      className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm focus:ring-green-500 focus:border-green-500 ${
+                      className={`mt-1 block w-full rounded-xl shadow-sm sm:text-md px-4 py-3 border focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-gray-50/50 hover:bg-white focus:bg-white ${
                         validationErrors.npwp ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
                       }`}
                       value={customerData.npwp}
@@ -693,18 +718,18 @@ export default function ReceptionistDashboard() {
 
                     {/* Existing Customer Indicator */}
                     {existingCustomer && (
-                      <div className={`mt-2 p-3 border rounded-md ${hasActiveQueue ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+                      <div className={`mt-2 p-3 border rounded-md ${hasActiveQueue ? 'bg-red-50 border-red-200' : 'bg-indigo-50/50 border-indigo-200'}`}>
                         <div className="flex items-center">
                           <div className="flex-shrink-0">
-                            <svg className={`h-5 w-5 ${hasActiveQueue ? 'text-red-400' : 'text-blue-400'}`} fill="currentColor" viewBox="0 0 20 20">
+                            <svg className={`h-5 w-5 ${hasActiveQueue ? 'text-red-400' : 'text-indigo-400'}`} fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d={hasActiveQueue ? "M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" : "M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"} clipRule="evenodd" />
                             </svg>
                           </div>
                           <div className="ml-3 flex-1">
-                            <p className={`text-sm font-medium ${hasActiveQueue ? 'text-red-800' : 'text-blue-800'}`}>
+                            <p className={`text-sm font-medium ${hasActiveQueue ? 'text-red-800' : 'text-indigo-800'}`}>
                               {hasActiveQueue ? 'Wajib Pajak Memiliki Antrian Aktif' : 'Wajib Pajak Ditemukan'}
                             </p>
-                            <p className={`text-sm ${hasActiveQueue ? 'text-red-700' : 'text-blue-700'}`}>
+                            <p className={`text-sm ${hasActiveQueue ? 'text-red-700' : 'text-indigo-700'}`}>
                               {existingCustomer.name} • {customerHistory.length} kunjungan sebelumnya
                             </p>
                             {hasActiveQueue && (
@@ -717,7 +742,7 @@ export default function ReceptionistDashboard() {
                             <button
                               type="button"
                               onClick={() => setShowCustomerHistory(!showCustomerHistory)}
-                              className="ml-auto text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              className="ml-auto text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                             >
                               {showCustomerHistory ? 'Sembunyikan' : 'Lihat Riwayat'}
                             </button>
@@ -726,13 +751,13 @@ export default function ReceptionistDashboard() {
 
                         {/* Customer History */}
                         {showCustomerHistory && customerHistory.length > 0 && !hasActiveQueue && (
-                          <div className="mt-3 border-t border-blue-200 pt-3">
-                            <h4 className="text-sm font-medium text-blue-800 mb-2">Riwayat Kunjungan Terakhir</h4>
+                          <div className="mt-3 border-t border-indigo-200 pt-3">
+                            <h4 className="text-sm font-medium text-indigo-800 mb-2">Riwayat Kunjungan Terakhir</h4>
                             <div className="space-y-2 max-h-32 overflow-y-auto">
                               {customerHistory.slice(0, 3).map((visit: any, index: number) => (
-                                <div key={index} className="text-xs text-blue-700 bg-blue-100 p-2 rounded">
+                                <div key={index} className="text-xs text-indigo-700 bg-indigo-100 p-2 rounded">
                                   <div className="font-medium">{visit.serviceCategory || 'Layanan Umum'}</div>
-                                  <div className="text-blue-600">
+                                  <div className="text-indigo-600">
                                     {new Date(visit.completedAt).toLocaleDateString('id-ID')} • 
                                     Durasi: {visit.serviceDuration || 0} menit
                                   </div>
@@ -756,7 +781,7 @@ export default function ReceptionistDashboard() {
                       type="text"
                       id="name"
                       required
-                      className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm focus:ring-green-500 focus:border-green-500 ${
+                      className={`mt-1 block w-full rounded-xl shadow-sm sm:text-md px-4 py-3 border focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-gray-50/50 hover:bg-white focus:bg-white ${
                         validationErrors.name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
                       }`}
                       value={customerData.name}
@@ -783,7 +808,7 @@ export default function ReceptionistDashboard() {
                   <textarea
                     id="interests"
                     rows={3}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    className="mt-1 block w-full border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md px-4 py-3 bg-gray-50/50 hover:bg-white focus:bg-white transition-colors"
                     placeholder="Jelaskan kebutuhan atau keluhan wajib pajak..."
                     value={customerData.interests}
                     onChange={(e) => setCustomerData({...customerData, interests: e.target.value})}
@@ -795,11 +820,11 @@ export default function ReceptionistDashboard() {
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Informasi Kontak / Penanggung Jawab</h3>
                     
                     {existingContacts.length > 0 && (
-                        <div className="mb-4 bg-blue-50 p-4 rounded-md">
-                            <h4 className="text-sm font-medium text-blue-800 mb-2">Kontak Terdaftar:</h4>
+                        <div className="mb-4 bg-indigo-50/50 p-4 rounded-md">
+                            <h4 className="text-sm font-medium text-indigo-800 mb-2">Kontak Terdaftar:</h4>
                             <div className="space-y-2 max-h-40 overflow-y-auto">
                                 {existingContacts.map((contact, idx) => (
-                                    <div key={idx} className="text-sm text-blue-700 border-b border-blue-200 pb-2 last:border-0 hover:bg-blue-100 p-2 rounded cursor-pointer"
+                                    <div key={idx} className="text-sm text-indigo-700 border-b border-indigo-200 pb-2 last:border-0 hover:bg-indigo-100 p-2 rounded cursor-pointer"
                                          onClick={() => setCustomerData(prev => ({
                                              ...prev,
                                              contact: {
@@ -819,7 +844,7 @@ export default function ReceptionistDashboard() {
                                     </div>
                                 ))}
                             </div>
-                            <p className="text-xs text-blue-600 mt-2">* Klik kontak di atas untuk mengisi form di bawah otomatis</p>
+                            <p className="text-xs text-indigo-600 mt-2">* Klik kontak di atas untuk mengisi form di bawah otomatis</p>
                         </div>
                     )}
 
@@ -828,7 +853,7 @@ export default function ReceptionistDashboard() {
                              <label className="block text-sm font-medium text-gray-700">Nama Kontak</label>
                              <input 
                                 type="text"
-                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                                className="mt-1 block w-full border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md px-4 py-3 bg-gray-50/50 hover:bg-white focus:bg-white transition-colors"
                                 value={customerData.contact.name}
                                 onChange={(e) => setCustomerData({...customerData, contact: {...customerData.contact, name: e.target.value}})}
                                 placeholder="Nama penanggung jawab"
@@ -838,7 +863,7 @@ export default function ReceptionistDashboard() {
                              <label className="block text-sm font-medium text-gray-700">No HP Kontak</label>
                              <input 
                                 type="text"
-                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                                className="mt-1 block w-full border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md px-4 py-3 bg-gray-50/50 hover:bg-white focus:bg-white transition-colors"
                                 value={customerData.contact.phone}
                                 onChange={(e) => setCustomerData({...customerData, contact: {...customerData.contact, phone: e.target.value}})}
                                 placeholder="Nomor HP"
@@ -848,7 +873,7 @@ export default function ReceptionistDashboard() {
                              <label className="block text-sm font-medium text-gray-700">Email Kontak (Opsional)</label>
                              <input 
                                 type="email"
-                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                                className="mt-1 block w-full border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md px-4 py-3 bg-gray-50/50 hover:bg-white focus:bg-white transition-colors"
                                 value={customerData.contact.email}
                                 onChange={(e) => setCustomerData({...customerData, contact: {...customerData.contact, email: e.target.value}})}
                                 placeholder="Email"
@@ -865,14 +890,14 @@ export default function ReceptionistDashboard() {
                                     file:mr-4 file:py-2 file:px-4
                                     file:rounded-md file:border-0
                                     file:text-sm file:font-semibold
-                                    file:bg-green-50 file:text-green-700
-                                    hover:file:bg-green-100"
+                                    file:bg-indigo-50 file:text-indigo-700
+                                    hover:file:bg-indigo-100"
                                   disabled={uploading}
                                />
                                {uploading && <span className="text-sm text-gray-500">Mengupload...</span>}
                              </div>
                              {customerData.contact.idCardScan && (
-                               <div className="mt-2 text-sm text-green-600 flex items-center gap-2">
+                               <div className="mt-2 text-sm text-indigo-600 flex items-center gap-2">
                                  <span>✓ File terupload</span>
                                  <a href={customerData.contact.idCardScan} target="_blank" rel="noopener noreferrer" className="underline hover:text-green-800">
                                    Lihat
@@ -897,7 +922,7 @@ export default function ReceptionistDashboard() {
                   <select
                     id="serviceType"
                     disabled={loading || hasActiveQueue}
-                    className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm focus:ring-green-500 focus:border-green-500 ${
+                    className={`mt-1 block w-full rounded-xl shadow-sm sm:text-md px-4 py-3 border focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-gray-50/50 hover:bg-white focus:bg-white ${
                       validationErrors.serviceType ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
                     }`}
                     value={customerData.serviceType}
@@ -927,7 +952,7 @@ export default function ReceptionistDashboard() {
                     </label>
                     <select
                       id="serviceOrder"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                      className="mt-1 block w-full border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md px-4 py-3 bg-gray-50/50 hover:bg-white focus:bg-white transition-colors"
                       value={customerData.serviceOrder}
                       onChange={(e) => setCustomerData({...customerData, serviceOrder: e.target.value as any})}
                     >
@@ -943,7 +968,7 @@ export default function ReceptionistDashboard() {
                 <button
                   type="submit"
                   disabled={loading || hasActiveQueue}
-                  className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex justify-center w-full sm:w-auto py-3 px-8 border border-transparent shadow-lg text-base font-bold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all hover:scale-105"
                 >
                   {loading ? 'Memproses...' : hasActiveQueue ? 'Antrian Aktif Ditemukan' : 'Buat Nomor Antrian'}
                 </button>
@@ -952,8 +977,8 @@ export default function ReceptionistDashboard() {
           )}
 
           {activeTab === 'search' && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Pencarian Wajib Pajak</h2>
+            <div className="bg-white/80 backdrop-blur-xl shadow-xl ring-1 ring-black/5 rounded-3xl border border-white/50 p-6">
+              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 mb-6">Pencarian Wajib Pajak</h2>
 
               <div className="mb-4">
                 <div className="flex">
@@ -961,7 +986,7 @@ export default function ReceptionistDashboard() {
                     type="text"
                     placeholder="Cari berdasarkan NPWP (15 digit) atau nama..."
                     maxLength={50}
-                    className="flex-1 border-gray-300 rounded-l-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    className="flex-1 border-gray-300 rounded-l-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     value={searchQuery}
                     onChange={(e) => {
                       // Allow both letters and numbers for name/NPWP search
@@ -993,7 +1018,7 @@ export default function ReceptionistDashboard() {
                         </div>
                         <button
                           onClick={() => selectCustomer(customer)}
-                          className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200"
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-green-200"
                         >
                           Pilih
                         </button>
@@ -1007,13 +1032,16 @@ export default function ReceptionistDashboard() {
 
           {activeTab === 'queues' && (
             <div className="space-y-6">
-              <div className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Status Antrian Hari Ini</h2>
+              <div className="bg-white/80 backdrop-blur-xl shadow-xl ring-1 ring-black/5 rounded-3xl border border-white/50 p-6">
+                <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 mb-6">Status Antrian Hari Ini</h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Helpdesk Queue */}
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-3">Helpdesk</h3>
+                  <div className="bg-white/80 backdrop-blur-sm shadow-sm p-6 rounded-2xl border border-white/50 hover:shadow-md transition-shadow relative overflow-hidden ring-1 ring-black/5 hover:shadow-md transition-shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                      <span className="w-2 h-6 bg-indigo-500 rounded-full mr-2"></span>
+                      Helpdesk
+                    </h3>
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Menunggu:</span>
@@ -1021,18 +1049,21 @@ export default function ReceptionistDashboard() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Sedang Dilayani:</span>
-                        <span className="text-sm font-medium text-blue-600">{queueStats.helpdesk.inProgress}</span>
+                        <span className="text-sm font-medium text-indigo-600">{queueStats.helpdesk.inProgress}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Selesai:</span>
-                        <span className="text-sm font-medium text-green-600">{queueStats.helpdesk.completed}</span>
+                        <span className="text-sm font-medium text-indigo-600">{queueStats.helpdesk.completed}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* TPT Queue */}
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-3">TPT</h3>
+                  <div className="bg-white/80 backdrop-blur-sm shadow-sm p-6 rounded-2xl border border-white/50 hover:shadow-md transition-shadow relative overflow-hidden ring-1 ring-black/5 hover:shadow-md transition-shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                      <span className="w-2 h-6 bg-purple-500 rounded-full mr-2"></span>
+                      TPT
+                    </h3>
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Menunggu:</span>
@@ -1040,11 +1071,33 @@ export default function ReceptionistDashboard() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Sedang Dilayani:</span>
-                        <span className="text-sm font-medium text-blue-600">{queueStats.tpt.inProgress}</span>
+                        <span className="text-sm font-medium text-indigo-600">{queueStats.tpt.inProgress}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Selesai:</span>
-                        <span className="text-sm font-medium text-green-600">{queueStats.tpt.completed}</span>
+                        <span className="text-sm font-medium text-indigo-600">{queueStats.tpt.completed}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* SPT Queue */}
+                  <div className="bg-white/80 backdrop-blur-sm shadow-sm p-6 rounded-2xl border border-white/50 hover:shadow-md transition-shadow relative overflow-hidden ring-1 ring-black/5 hover:shadow-md transition-shadow">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                      <span className="w-2 h-6 bg-orange-500 rounded-full mr-2"></span>
+                      SPT Tahunan
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Menunggu:</span>
+                        <span className="text-sm font-medium text-yellow-600">{queueStats.spt.waiting}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Sedang Dilayani:</span>
+                        <span className="text-sm font-medium text-indigo-600">{queueStats.spt.inProgress}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Selesai:</span>
+                        <span className="text-sm font-medium text-indigo-600">{queueStats.spt.completed}</span>
                       </div>
                     </div>
                   </div>
@@ -1055,12 +1108,12 @@ export default function ReceptionistDashboard() {
 
           {activeTab === 'manage' && (
             <div className="space-y-6">
-              <div className="bg-white shadow rounded-lg p-6">
+              <div className="bg-white/80 backdrop-blur-xl shadow-xl ring-1 ring-black/5 rounded-3xl border border-white/50 p-6">
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <h2 className="text-xl font-semibold">Kelola Antrian Aktif</h2>
+                    <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 mb-6">Kelola Antrian Aktif</h2>
                     <p className="text-sm text-gray-600">Hanya menampilkan antrian yang belum selesai (Menunggu/Dalam Proses)</p>
-                    <p className="text-xs text-green-600">🔄 Auto-refresh aktif setiap 10 detik</p>
+                    <p className="text-xs text-indigo-600">🔄 Auto-refresh aktif setiap 10 detik</p>
                   </div>
                   <button
                     onClick={() => {
@@ -1074,7 +1127,7 @@ export default function ReceptionistDashboard() {
                 </div>
 
                 {message && (
-                  <div className={`mb-4 p-4 rounded-md ${message.includes('berhasil') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                  <div className={`mb-4 p-4 rounded-md ${message.includes('berhasil') ? 'bg-indigo-50 text-indigo-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
                     {message}
                   </div>
                 )}
@@ -1088,17 +1141,17 @@ export default function ReceptionistDashboard() {
                     </div>
                   ) : (
                     managedQueues.filter(queue => queue.status !== 'COMPLETED').map((queue) => (
-                      <div key={queue.id} className={`border rounded-lg p-4 ${queue.status === 'IN_PROGRESS' ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}`}>
+                      <div key={queue.id} className={`border rounded-xl p-5 shadow-sm transition-all hover:shadow-md ${queue.status === 'IN_PROGRESS' ? 'bg-indigo-50/50 border-indigo-200' : 'bg-white border-gray-200'}`}>
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex items-center space-x-3">
                             <div className="text-lg font-bold text-gray-900">{queue.queueNumber}</div>
                             <div className={`px-2 py-1 text-xs rounded ${queue.priorityLevel === 'URGENT' ? 'bg-red-100 text-red-800' : queue.priorityLevel === 'HIGH' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
                               {queue.priorityLevel === 'URGENT' ? 'MENDESAK' : queue.priorityLevel === 'HIGH' ? 'TINGGI' : 'NORMAL'}
                             </div>
-                            <div className={`px-2 py-1 text-xs rounded ${queue.serviceType === 'HELPDESK' ? 'bg-green-100 text-green-800' : queue.serviceType === 'TPT' ? 'bg-purple-100 text-purple-800' : queue.serviceType.startsWith('SPT') ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}`}>
+                            <div className={`px-2 py-1 text-xs rounded ${queue.serviceType === 'HELPDESK' ? 'bg-indigo-100 text-green-800' : queue.serviceType === 'TPT' ? 'bg-purple-100 text-purple-800' : queue.serviceType.startsWith('SPT') ? 'bg-orange-100 text-orange-800' : 'bg-indigo-100 text-indigo-800'}`}>
                               {queue.serviceType}
                             </div>
-                            <div className={`px-2 py-1 text-xs rounded ${queue.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                            <div className={`px-2 py-1 text-xs rounded ${queue.status === 'IN_PROGRESS' ? 'bg-indigo-100 text-indigo-800' : 'bg-yellow-100 text-yellow-800'}`}>
                               {queue.status === 'IN_PROGRESS' ? 'SEDANG DILAYANI' : 'MENUNGGU'}
                             </div>
                           </div>
@@ -1169,15 +1222,15 @@ export default function ReceptionistDashboard() {
 
           {/* Public Display Tab */}
           {activeTab === 'public' && (
-            <div className="bg-white shadow rounded-lg p-6 text-center">
-              <h2 className="text-xl font-semibold mb-4">Tampilan Publik Antrian</h2>
+            <div className="bg-white/80 backdrop-blur-xl shadow-xl ring-1 ring-black/5 rounded-3xl border border-white/50 p-6 text-center">
+              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 mb-6">Tampilan Publik Antrian</h2>
               <p className="text-gray-600 mb-6">
                 Halaman tampilan publik telah dipindahkan ke halaman terpisah agar dapat diakses tanpa login.
               </p>
               <Link
                 href="/display"
                 target="_blank"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 <span className="mr-2">📺</span>
                 Buka Tampilan Publik

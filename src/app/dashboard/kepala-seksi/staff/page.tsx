@@ -114,7 +114,7 @@ export default function StaffPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Performa Staff</h1>
-          <p className="text-gray-500 mt-1">Evaluasi kinerja petugas Helpdesk dan TPT hari ini</p>
+          <p className="text-gray-500 mt-1">Evaluasi kinerja petugas Helpdesk, TPT, dan SPT hari ini</p>
         </div>
         <button 
           onClick={fetchStats}
@@ -159,6 +159,24 @@ export default function StaffPage() {
                    .sort((a, b) => b.completedToday - a.completedToday)
                    .map((staff, index) => (
                      <StaffCard key={staff.id} staff={staff} rank={index + 1} />
+                   ))
+               ) : <EmptyState />}
+             </div>
+          </section>
+
+          {/* SPT Section */}
+          <section>
+             <div className="flex items-center gap-2 mb-6">
+                <span className="w-1 h-6 bg-green-500 rounded-full"></span>     
+                <h2 className="text-lg font-bold text-gray-800">Staff SPT</h2>   
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+               {stats.staffPerformance.spt && stats.staffPerformance.spt.length > 0 ? (
+                 stats.staffPerformance.spt
+                   .sort((a, b) => b.completedToday - a.completedToday)
+                   .map((staff, index) => (
+                     <StaffCard key={staff.id} staff={staff} rank={index + 1} /> 
                    ))
                ) : <EmptyState />}
              </div>

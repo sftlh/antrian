@@ -13,6 +13,13 @@ export interface QueueStats {
     escalated: number
     cancelled: number
   }
+  spt: {
+    waiting: number
+    inProgress: number
+    completed: number
+    escalated: number
+    cancelled: number
+  }
   total: {
     waiting: number
     inProgress: number
@@ -28,6 +35,12 @@ export interface QueueStats {
       averageRating: number
     }>
     tpt: Array<{
+      id: string
+      name: string
+      completedToday: number
+      averageRating: number
+    }>
+    spt: Array<{
       id: string
       name: string
       completedToday: number

@@ -45,6 +45,13 @@ export async function GET(request: NextRequest) {
       cancelled: todayQueues.filter(q => q.serviceType === 'HELPDESK' && q.status === 'CANCELLED').length
     }
 
+    const sptStats = {
+      waiting: todayQueues.filter(q => q.serviceType.includes('SPT') && q.status === 'WAITING').length,
+      inProgress: todayQueues.filter(q => q.serviceType.includes('SPT') && q.status === 'IN_PROGRESS').length,
+      completed: todayQueues.filter(q => q.serviceType.includes('SPT') && q.status === 'COMPLETED').length,
+      escalated: todayQueues.filter(q => q.serviceType.includes('SPT') && q.status === 'ESCALATED').length,
+      cancelled: todayQueues.filter(q => q.serviceType.includes('SPT') && q.status === 'CANCELLED').length
+    };
     const tptStats = {
       waiting: todayQueues.filter(q => q.serviceType === 'TPT' && q.status === 'WAITING').length,
       inProgress: todayQueues.filter(q => q.serviceType === 'TPT' && q.status === 'IN_PROGRESS').length,
@@ -59,6 +66,7 @@ export async function GET(request: NextRequest) {
       select: { id: true, name: true }
     })
 
+    const sptUsers = await prisma.user.findMany({ where: { role: 'PETUGAS_SPT' }, select: { id: true, name: true } });
     const tptUsers = await prisma.user.findMany({
       where: { role: 'TPT' },
       select: { id: true, name: true }
@@ -96,6 +104,33 @@ export async function GET(request: NextRequest) {
       })
     )
 
+    const sptPerformance = await Promise.all(
+      sptUsers.map(async (user) => {
+        const completedCount = todayQueues.filter(q =>
+          q.serviceType.includes('SPT') &&
+          q.status === 'COMPLETED' &&
+          q.calledBy === user.id
+        ).length;
+        
+        const avgRating = await prisma.queue.aggregate({
+          where: {
+            serviceType: { in: ['SPT_TAHUNAN_OP', 'SPT_TAHUNAN_BADAN'] },
+            status: 'COMPLETED',
+            calledBy: user.id,
+            completedAt: { gte: startOfDay, lt: endOfDay }
+          },
+          _avg: { rating: true }
+        });
+        
+        return {
+          id: user.id,
+          name: user.name,
+          completedToday: completedCount,
+          averageRating: avgRating._avg.rating || 0
+        };
+      })
+    );
+    
     const tptPerformance = await Promise.all(
       tptUsers.map(async (user) => {
         const completedCount = todayQueues.filter(q =>
@@ -153,16 +188,18 @@ export async function GET(request: NextRequest) {
     const stats = {
       helpdesk: helpdeskStats,
       tpt: tptStats,
+      spt: sptStats,
       total: {
-        waiting: helpdeskStats.waiting + tptStats.waiting,
-        inProgress: helpdeskStats.inProgress + tptStats.inProgress,
-        completed: helpdeskStats.completed + tptStats.completed,
-        escalated: helpdeskStats.escalated + tptStats.escalated,
-        cancelled: helpdeskStats.cancelled + tptStats.cancelled
+        waiting: helpdeskStats.waiting + tptStats.waiting + sptStats.waiting,
+        inProgress: helpdeskStats.inProgress + tptStats.inProgress + sptStats.inProgress,
+        completed: helpdeskStats.completed + tptStats.completed + sptStats.completed,
+        escalated: helpdeskStats.escalated + tptStats.escalated + sptStats.escalated,
+        cancelled: helpdeskStats.cancelled + tptStats.cancelled + sptStats.cancelled
       },
       staffPerformance: {
         helpdesk: helpdeskPerformance,
-        tpt: tptPerformance
+        tpt: tptPerformance,
+        spt: sptPerformance
       },
       escalatedCases: escalatedCases.map(case_ => ({
         id: case_.id,

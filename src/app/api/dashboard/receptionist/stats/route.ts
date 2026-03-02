@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
     // Calculate statistics by service type
     const helpdeskQueues = todayQueues.filter(q => q.serviceType === 'HELPDESK')
     const tptQueues = todayQueues.filter(q => q.serviceType === 'TPT')
+    const sptQueues = todayQueues.filter(q => q.serviceType.startsWith('SPT'))
 
     const stats = {
       totalToday: todayQueues.length,
@@ -51,6 +52,11 @@ export async function GET(request: NextRequest) {
         waiting: tptQueues.filter(q => q.status === 'WAITING').length,
         inProgress: tptQueues.filter(q => q.status === 'IN_PROGRESS').length,
         completed: tptQueues.filter(q => q.status === 'COMPLETED').length
+      },
+      spt: {
+        waiting: sptQueues.filter(q => q.status === 'WAITING').length,
+        inProgress: sptQueues.filter(q => q.status === 'IN_PROGRESS').length,
+        completed: sptQueues.filter(q => q.status === 'COMPLETED').length
       }
     }
 
