@@ -18,7 +18,7 @@ export async function PATCH(
     const token = authHeader.substring(7)
     const payload = verifyToken(token)
 
-    if (!payload || !['TPT', 'HELPDESK', 'ADMIN'].includes(payload.role)) {
+    if (!payload || !['TPT', 'HELPDESK', 'ADMIN', 'PETUGAS_SPT'].includes(payload.role)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 

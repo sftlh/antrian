@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth/context'
@@ -34,6 +34,7 @@ interface User {
   email: string
   name: string
   role: string
+  additionalRoles?: string[]
   isActive: boolean
   createdAt: string
   updatedAt?: string
@@ -79,6 +80,7 @@ interface UserFormData {
   email: string
   name: string
   role: string
+  additionalRoles?: string[]
   password: string
 }
 
@@ -124,6 +126,7 @@ export default function AdminDashboard() {
     email: '',
     name: '',
     role: 'RECEPTIONIST',
+    additionalRoles: [],
     password: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -348,6 +351,7 @@ export default function AdminDashboard() {
       email: '',
       name: '',
       role: 'RECEPTIONIST',
+      additionalRoles: [],
       password: ''
     })
     setShowUserModal(true)
@@ -360,9 +364,33 @@ export default function AdminDashboard() {
       email: user.email,
       name: user.name,
       role: user.role,
+      additionalRoles: user.additionalRoles || [],
       password: '' // Don't pre-fill password
     })
     setShowUserModal(true)
+  }
+
+  const handleRoleToggle = (roleToToggle: string) => {
+    setUserForm(prev => {
+      const currentAdditional = prev.additionalRoles || []
+      let newAdditional
+
+      if (currentAdditional.includes(roleToToggle)) {
+        newAdditional = currentAdditional.filter(r => r !== roleToToggle)
+      } else {
+        newAdditional = [...currentAdditional, roleToToggle]
+      }
+
+      // If they check the main role, don't add to additional
+      if (roleToToggle === prev.role) {
+        newAdditional = newAdditional.filter(r => r !== roleToToggle)
+      }
+
+      return {
+        ...prev,
+        additionalRoles: newAdditional
+      }
+    })
   }
 
   const fetchQueues = async () => {
@@ -777,101 +805,156 @@ export default function AdminDashboard() {
 
           {/* User Management Tab */}
           {activeTab === 'users' && (
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-              <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100">
+              <div className="px-6 py-6 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div>
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">User Management</h3>
-                  <p className="mt-1 max-w-2xl text-sm text-gray-500">Manage user accounts and permissions</p>
+                  <h3 className="text-xl font-bold text-gray-900 font-jakarta">User Management</h3>
+                  <p className="mt-1 text-sm text-gray-500">Kelola akun pengguna, peran utama, dan hak akses tambahan sistem.</p>
                 </div>
                 <div className="flex space-x-3">
                   <button
                     onClick={fetchUsers}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    className="inline-flex items-center px-4 py-2.5 border border-gray-200 shadow-sm text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 hover:shadow"
                   >
-                    🔄 Refresh
+                    <svg className="mr-2 h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh
                   </button>
                   <button
                     onClick={openCreateUserModal}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    className="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     <svg className="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    Create User
+                    Add New User
                   </button>
                 </div>
               </div>
-              <ul className="divide-y divide-gray-200">
-                {users.length === 0 ? (
-                  <li className="px-4 py-8 text-center">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                    </svg>
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
-                    <p className="mt-1 text-sm text-gray-500">Get started by creating your first user.</p>
-                  </li>
-                ) : (
-                  users.map((user) => (
-                    <li key={user.id} className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                              <span className="text-sm font-medium text-gray-700">
-                                {user.name.charAt(0).toUpperCase()}
-                              </span>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User Details</th>
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Primary Role</th>
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Additional Roles</th>
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                      <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {users.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center border-b-0">
+                          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                            <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                            </svg>
+                          </div>
+                          <h3 className="text-sm font-semibold text-gray-900">No users found</h3>
+                          <p className="mt-1 text-sm text-gray-500">Get started by creating your first user.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      users.map((user) => (
+                        <tr key={user.id} className="hover:bg-gray-50/50 transition-colors duration-150 group">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-11 w-11">
+                                <div className="h-full w-full rounded-full bg-gradient-to-tr from-indigo-100 to-blue-200 flex items-center justify-center border border-white shadow-sm">
+                                  <span className="text-sm font-bold text-indigo-700">
+                                    {user.name.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{user.name}</div>
+                                <div className="text-xs text-gray-500 mt-0.5">{user.email} &bull; <span className="text-gray-400">@{user.username}</span></div>
+                              </div>
                             </div>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                            <div className="text-sm text-gray-500">{user.email} • {user.username}</div>
-                          </div>
-                          <div className="ml-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
-                              user.role === 'RECEPTIONIST' ? 'bg-blue-100 text-blue-800' :
-                              user.role === 'HELPDESK' ? 'bg-green-100 text-green-800' :
-                              user.role === 'TPT' ? 'bg-indigo-100 text-indigo-800' :
-                              'bg-gray-100 text-gray-800'
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${
+                              user.role === 'ADMIN' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                              user.role === 'RECEPTIONIST' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              user.role === 'HELPDESK' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              user.role === 'TPT' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                              user.role === 'PETUGAS_SPT' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                              'bg-gray-50 text-gray-700 border-gray-200'
                             }`}>
-                              {user.role}
+                              {user.role.replace('_', ' ')}
                             </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {user.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                          <button
-                            onClick={() => openEditUserModal(user)}
-                            className="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => toggleUserStatus(user.id, !user.isActive)}
-                            className={`inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded ${
-                              user.isActive
-                                ? 'text-red-700 bg-red-100 hover:bg-red-200'
-                                : 'text-green-700 bg-green-100 hover:bg-green-200'
-                            }`}
-                          >
-                            {user.isActive ? 'Deactivate' : 'Activate'}
-                          </button>
-                          <button
-                            onClick={() => setShowDeleteConfirm(user.id)}
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </li>
-                  ))
-                )}
-              </ul>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-1.5 max-w-[220px]">
+                              {user.additionalRoles && user.additionalRoles.length > 0 ? (
+                                user.additionalRoles.map((role) => (
+                                  <span key={role} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-50 text-gray-600 border border-gray-200 shadow-sm">
+                                    {role.replace('_', ' ')}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-xs text-gray-400 italic px-1">-</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                              user.isActive ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-100'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${user.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                              {user.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <button
+                                onClick={() => openEditUserModal(user)}
+                                className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
+                                title="Edit User"
+                              >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => toggleUserStatus(user.id, !user.isActive)}
+                                className={`p-1.5 rounded-lg transition-colors border border-transparent ${
+                                  user.isActive
+                                    ? 'text-gray-500 hover:text-orange-600 hover:bg-orange-50 hover:border-orange-100'
+                                    : 'text-gray-500 hover:text-green-600 hover:bg-green-50 hover:border-green-100'
+                                }`}
+                                title={user.isActive ? 'Deactivate User' : 'Activate User'}
+                              >
+                                {user.isActive ? (
+                                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => setShowDeleteConfirm(user.id)}
+                                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                                title="Delete User"
+                              >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -1259,89 +1342,137 @@ export default function AdminDashboard() {
 
       {/* User Modal */}
       {showUserModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {editingUser ? 'Edit User' : 'Create New User'}
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4 transition-all duration-300">
+          <div className="relative w-full max-w-md shadow-2xl rounded-2xl bg-white border border-gray-100 transform transition-all">
+            <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-100 rounded-t-2xl flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900 font-jakarta">
+                {editingUser ? 'Edit User Configuration' : 'Create New System User'}
               </h3>
+              <button onClick={() => setShowUserModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
 
+            <div className="px-6 py-5">
               <form onSubmit={handleUserSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
                   <input
                     type="text"
                     required
                     value={userForm.name}
                     onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="block w-full border-gray-200 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-4 py-2.5 transition-all bg-gray-50 focus:bg-white"
+                    placeholder="e.g. John Doe"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Username</label>
-                  <input
-                    type="text"
-                    required
-                    value={userForm.username}
-                    onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
+                    <input
+                      type="text"
+                      required
+                      value={userForm.username}
+                      onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+                      className="block w-full border-gray-200 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-4 py-2.5 transition-all bg-gray-50 focus:bg-white"
+                      placeholder="johndoe"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                    <input
+                      type="email"
+                      required
+                      value={userForm.email}
+                      onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                      className="block w-full border-gray-200 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-4 py-2.5 transition-all bg-gray-50 focus:bg-white"
+                      placeholder="john@example.com"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={userForm.email}
-                    onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Role</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Primary Role</label>
                   <select
                     value={userForm.role}
                     onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="block w-full border-gray-200 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-4 py-2.5 transition-all bg-gray-50 focus:bg-white text-gray-900"
                   >
                     <option value="RECEPTIONIST">Receptionist</option>
                     <option value="HELPDESK">Helpdesk</option>
                     <option value="TPT">TPT</option>
                     <option value="KEPALA_SEKSI">Kepala Seksi</option>
+                    <option value="PETUGAS_SPT">Petugas SPT</option>
                     <option value="ADMIN">Admin</option>
                   </select>
                 </div>
 
+                <div className="pt-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Peran Tambahan (Opsional)</label>
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">Multi-Role</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 border border-gray-200 rounded-xl bg-gray-50/50 shadow-inner">
+                    {['RECEPTIONIST', 'HELPDESK', 'TPT', 'KEPALA_SEKSI', 'PETUGAS_SPT', 'ADMIN'].map((roleOpt) => (
+                      <label key={roleOpt} className="flex items-center p-2 border border-gray-100 rounded-lg hover:bg-white bg-transparent transition-colors cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          id={`role-${roleOpt}`}
+                          checked={userForm.additionalRoles?.includes(roleOpt) || false}
+                          onChange={() => handleRoleToggle(roleOpt)}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded transition-all"
+                        />
+                        <span className="ml-2.5 block text-xs font-medium text-gray-700 group-hover:text-indigo-700">
+                          {roleOpt.replace('_', ' ')}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-gray-500 flex items-center">
+                    <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Centang peran lain yang dapat dipilih pengguna saat login.
+                  </p>
+                </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Password {editingUser && '(leave blank to keep current)'}
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5 flex justify-between">
+                    <span>Password</span>
+                    {editingUser && <span className="text-xs text-gray-400 font-normal italic">(Kosongkan jika tidak ingin diubah)</span>}
                   </label>
                   <input
                     type="password"
                     required={!editingUser}
                     value={userForm.password}
                     onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="block w-full border-gray-200 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-4 py-2.5 transition-all bg-gray-50 focus:bg-white"
+                    placeholder={editingUser ? "••••••••" : "Enter a secure password"}
                   />
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
+                <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-4">
                   <button
                     type="button"
                     onClick={() => setShowUserModal(false)}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    className="inline-flex items-center px-4 py-2 border border-gray-200 shadow-sm text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                    className="inline-flex items-center px-5 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-md hover:shadow-lg disabled:opacity-50 transition-all"
                   >
-                    {isSubmitting ? 'Saving...' : (editingUser ? 'Update User' : 'Create User')}
+                    {isSubmitting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </>
+                    ) : (editingUser ? 'Update User' : 'Create User')}
                   </button>
                 </div>
               </form>
@@ -1433,122 +1564,233 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Customers Tab */}
+      ﻿            {/* Customers Tab */}
       {activeTab === 'customers' && (
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Customer Management</h3>
+        <div className="space-y-6 max-w-[95%] lg:max-w-7xl mx-auto py-8">
+          <div className="bg-white shadow-2xl shadow-indigo-100/50 rounded-3xl overflow-hidden border border-slate-100 ring-1 ring-slate-900/5">
+            {/* Header Section */}
+            <div className="bg-gradient-to-br from-blue-700 via-indigo-800 to-indigo-900 px-6 py-8 sm:px-10 sm:py-12 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-full opacity-20">
+                 <svg width="400" height="400" fill="none" viewBox="0 0 400 400"><defs><pattern id="p" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M0 40V0h40v40H0z" fill="url(#p-grad)"/><path d="M0 0h40v40H0V0z" stroke="#fff" strokeWidth="2" fill="none"/></pattern><linearGradient id="p-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#fff" stopOpacity="0.2"/><stop offset="100%" stopColor="#fff" stopOpacity="0"/></linearGradient></defs><rect width="400" height="400" fill="url(#p)"/></svg>
+              </div>
+              <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse"></div>
+              <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse" style={{animationDelay: '2s'}}></div>
 
-            {/* CSV Upload Section */}
-            <div className="border-b border-gray-200 pb-6 mb-6">
-              <h4 className="text-md font-medium text-gray-900 mb-4">Bulk Import Customers</h4>
-              <div className="space-y-4">
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Upload CSV File
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <input
-                      type="file"
-                      accept=".csv"
-                      onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                      disabled={isUploading}
-                    />
-                    <button
-                      onClick={() => csvFile && handleCsvUpload(csvFile)}
-                      disabled={!csvFile || isUploading}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isUploading ? 'Uploading...' : 'Upload CSV'}
-                    </button>
+                  <h3 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight flex items-center shadow-sm">
+                    <div className="bg-white/10 p-3 rounded-2xl mr-5 backdrop-blur-md shadow-inner border border-white/20">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    </div>
+                    Customer Management
+                  </h3>
+                  <p className="text-indigo-100 text-base sm:text-lg mt-4 ml-[72px] font-medium max-w-2xl leading-relaxed">Kelola pendaftaran wajib pajak, bulk upload data CSV, dan pantau histori dengan antarmuka modern yang terintegrasi.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 sm:p-10 bg-slate-50/80">
+              {/* CSV Upload Section */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 mb-10 border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pb-6 border-b border-slate-100">
+                  <div className="flex items-center space-x-4 mb-4 md:mb-0">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-600 p-3.5 rounded-2xl border border-blue-100/50 shadow-sm">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-slate-800">Bulk Import Customers</h4>
+                      <p className="text-sm text-slate-500 mt-1 font-medium">Upload massa data wajib pajak dalam format CSV ke dalam sistem antrian.</p>
+                    </div>
                   </div>
-                  <p className="mt-2 text-sm text-gray-500">
-                    CSV format: NPWP,Name,Interests (optional). First row should be headers.
-                  </p>
+                  <div className="flex items-center text-sm text-indigo-700 bg-indigo-50/80 px-4 py-2.5 rounded-xl border border-indigo-100/50 font-semibold whitespace-nowrap shadow-sm">
+                    <svg className="w-4 h-4 mr-2.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Format: <span className="font-bold font-mono tracking-tight bg-white px-2 py-0.5 rounded shadow-sm ml-1 text-slate-700">NPWP, Name, Interests</span></span>
+                  </div>
+                </div>
+                
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-end">
+                    <div className="lg:col-span-3 relative group">
+                      <div className="absolute inset-0 bg-blue-50/30 rounded-2xl border-2 border-dashed border-blue-200 group-hover:border-blue-400 group-hover:bg-blue-50/80 transition-all duration-300 z-0 pointer-events-none"></div>
+                      <div className="relative z-10 p-2.5">
+                        <input
+                          type="file"
+                          accept=".csv"
+                          onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                          className="block w-full text-base text-slate-600 file:mr-6 file:py-3.5 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:transition-colors cursor-pointer bg-transparent transition-all focus:outline-none focus:ring-4 focus:ring-blue-100 focus:rounded-xl"
+                          disabled={isUploading}
+                        />
+                      </div>
+                    </div>
+                    <div className="lg:col-span-1">
+                      <button
+                        onClick={() => csvFile && handleCsvUpload(csvFile)}
+                        disabled={!csvFile || isUploading}
+                        className="w-full flex justify-center items-center px-6 py-4 border border-transparent text-sm md:text-base font-bold rounded-2xl text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/30 disabled:opacity-50 disabled:from-slate-400 disabled:to-slate-400 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.98]"
+                      >
+                        {isUploading ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            Mulai Upload
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Upload Progress */}
                 {isUploading && uploadProgress.total > 0 && (
-                  <div className="bg-gray-50 p-4 rounded-md">
-                    <div className="flex justify-between text-sm text-gray-600 mb-2">
-                      <span>Processing customers...</span>
-                      <span>{uploadProgress.processed}/{uploadProgress.total}</span>
+                  <div className="mt-8 bg-blue-50/50 border border-blue-100 p-6 rounded-2xl shadow-inner">
+                    <div className="flex justify-between items-center text-sm font-bold text-indigo-900 mb-4">
+                      <span className="flex items-center text-base">
+                        <svg className="animate-spin mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Memproses Data CSV...
+                      </span>
+                      <span className="bg-white text-blue-800 px-4 py-1.5 rounded-full border border-blue-200 shadow-sm font-mono">{uploadProgress.processed} / {uploadProgress.total}</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-white rounded-full h-4 overflow-hidden shadow-inner border border-slate-200 p-0.5">
                       <div
-                        className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                        className="bg-gradient-to-r from-blue-500 via-indigo-500 to-indigo-600 h-full rounded-full transition-all duration-300 relative"
                         style={{ width: `${(uploadProgress.processed / uploadProgress.total) * 100}%` }}
-                      ></div>
+                      >
+                         <div className="absolute inset-0 bg-white/20" style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,0.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,0.15) 50%,rgba(255,255,255,0.15) 75%,transparent 75%,transparent)', backgroundSize: '1rem 1rem' }}></div>
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {/* Upload Errors */}
                 {uploadProgress.errors.length > 0 && (
-                  <div className="bg-red-50 border border-red-200 rounded-md p-4">
-                    <h5 className="text-sm font-medium text-red-800 mb-2">Upload Errors:</h5>
-                    <ul className="text-sm text-red-700 space-y-1">
-                      {uploadProgress.errors.map((error, index) => (
-                        <li key={index}>• {error}</li>
-                      ))}
-                    </ul>
+                  <div className="mt-8 bg-gradient-to-b from-red-50 to-white border border-red-200 rounded-2xl p-6 shadow-sm overflow-hidden relative">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-red-100 rounded-bl-full -z-0 opacity-50"></div>
+                    <div className="flex items-center mb-4 pb-4 border-b border-red-100 relative z-10">
+                      <div className="bg-white p-2.5 rounded-xl mr-4 border border-red-100 shadow-sm text-red-500">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                      </div>
+                      <div>
+                        <h5 className="text-lg font-bold text-red-800">Ditemukan {uploadProgress.errors.length} Error</h5>
+                        <p className="text-sm text-red-600 font-medium">Beberapa baris tidak dapat diproses</p>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl border border-red-100 p-4 shadow-inner relative z-10">
+                       <ul className="text-sm font-medium text-red-700 space-y-2 list-disc list-inside max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                         {uploadProgress.errors.map((error, index) => (
+                           <li key={index} className="pb-2 border-b border-red-50 last:border-0 last:pb-0">{error.replace('• ', '')}</li>
+                         ))}
+                       </ul>
+                    </div>
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Customer List */}
-            <div>
-              <h4 className="text-md font-medium text-gray-900 mb-4">Recent Customers</h4>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        NPWP
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Interests
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Created
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {customers.slice(0, 10).map((customer) => (
-                      <tr key={customer.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                          {customer.npwp}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {customer.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {customer.interests || '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(customer.createdAt).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {customers.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    No customers found
+              {/* Customer List */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm relative overflow-hidden transition-shadow duration-300 hover:shadow-md">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-indigo-50 to-transparent rounded-bl-full -z-0 pointer-events-none opacity-60"></div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 relative z-10">
+                  <div className="flex items-center">
+                    <div className="bg-gradient-to-br from-indigo-100 to-blue-50 p-3.5 rounded-2xl mr-5 border border-indigo-100 shadow-sm">
+                      <svg className="w-6 h-6 text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-extrabold text-slate-800">Recent Customers Data</h4>
+                      <p className="text-sm font-medium text-slate-500 mt-1">10 Data pendaftar terbaru dalam sistem</p>
+                    </div>
                   </div>
-                )}
+                  <div className="mt-5 sm:mt-0">
+                    <span className="inline-flex items-center px-4 py-2.5 rounded-xl text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm">
+                      <span className="relative flex h-3 w-3 mr-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                      </span>
+                      Real-time Feed
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm relative z-10 bg-slate-50/50">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-slate-200">
+                      <thead className="bg-slate-100/80">
+                        <tr>
+                          <th className="px-6 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">Wajib Pajak</th>
+                          <th className="px-6 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">NPWP</th>
+                          <th className="px-6 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">Keperluan Layanan</th>
+                          <th className="px-6 py-5 text-right text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">Waktu Registrasi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-slate-100">
+                        {customers.slice(0, 10).map((customer) => (
+                          <tr key={customer.id} className="hover:bg-blue-50/40 transition-colors group">
+                            <td className="px-6 py-5 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold text-lg mr-4 border border-indigo-200 shadow-sm group-hover:scale-105 transition-transform">
+                                  {customer.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">{customer.name}</div>
+                                  <div className="text-xs text-slate-400 font-medium mt-0.5">ID: {customer.id.substring(0,8)}...</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap">
+                              <div className="inline-flex items-center px-3 py-1.5 rounded-lg justify-center text-sm font-mono font-bold text-indigo-800 bg-indigo-50 border border-indigo-100 group-hover:bg-indigo-100 transition-colors">
+                                {customer.npwp}
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap">
+                              {customer.interests ? (
+                                <span className="px-4 py-2 inline-flex text-xs leading-5 font-bold rounded-lg bg-blue-50 text-blue-700 border border-blue-100 shadow-sm">
+                                  {customer.interests}
+                                </span>
+                              ) : (
+                                <span className="px-4 py-2 inline-flex text-xs leading-5 font-medium rounded-lg bg-slate-50 text-slate-500 border border-slate-200">
+                                  Belum Ditentukan
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap text-right">
+                              <div className="text-sm text-slate-700 font-semibold">
+                                {new Date(customer.createdAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric'})}
+                              </div>
+                              <div className="text-xs text-slate-400 font-medium mt-1">
+                                {new Date(customer.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute:'2-digit' }).replace('.', ':')} WIB
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {customers.length === 0 && (
+                    <div className="text-center py-20 bg-white">
+                      <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-slate-50 text-slate-300 mb-6 border-2 border-dashed border-slate-200 shadow-inner">
+                        <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-2xl font-bold text-slate-800">Database Kosong</h3>
+                      <p className="mt-3 text-base text-slate-500 max-w-md mx-auto font-medium leading-relaxed">Belum ada wajib pajak yang terdaftar dalam sistem. Silakan upload data CSV untuk memulai.</p>
+                      <button 
+                        onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
+                        className="mt-6 inline-flex justify-center items-center px-6 py-3 border border-slate-200 shadow-sm text-sm font-bold rounded-xl text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                      >
+                        <svg className="w-5 h-5 mr-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        Pilih File CSV
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
-
       {/* Delete User Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -1588,3 +1830,5 @@ export default function AdminDashboard() {
     </div>
   )
 }
+
+

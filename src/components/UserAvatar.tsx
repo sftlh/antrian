@@ -80,7 +80,9 @@ export default function UserAvatar({ showFeedbackButton = true, feedbackUrl }: U
     switch (role) {
       case 'KEPALA_SEKSI':
         return 'from-purple-500 to-indigo-600'
-      case 'TPT':
+      case 'PETUGAS_SPT':
+          return 'from-yellow-500 to-orange-600'
+        case 'TPT':
         return 'from-blue-500 to-cyan-600'
       case 'HELPDESK':
         return 'from-green-500 to-emerald-600'

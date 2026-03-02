@@ -4,7 +4,7 @@ import { comparePassword, generateToken } from '@/lib/auth/utils'
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, password } = await request.json()
+    const { username, password, selectedRole } = await request.json()
 
     if (!username || !password) {
       return NextResponse.json(
@@ -35,13 +35,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get all combined roles
+    const availableRoles = Array.from(new Set([user.role, ...(user.additionalRoles || [])]))
+
+    // Check if user has multiple roles and hasn't selected one
+    if (!selectedRole && availableRoles.length > 1) {
+      return NextResponse.json({
+        requiresRoleSelection: true,
+        availableRoles,
+        message: 'Please select a role to continue'
+      })
+    }
+
+    // Determine the actual role for this session
+    let sessionRole = user.role
+    if (selectedRole) {
+      if (!availableRoles.includes(selectedRole)) {
+        return NextResponse.json(
+          { error: 'Invalid role selection' },
+          { status: 400 }
+        )
+      }
+      sessionRole = selectedRole as any
+    }
+
     // Generate JWT token
     const token = generateToken({
       userId: user.id,
       username: user.username,
       email: user.email || undefined,
       name: user.name,
-      role: user.role
+      role: sessionRole
     })
 
     // Return user data and token
@@ -50,7 +74,7 @@ export async function POST(request: NextRequest) {
       username: user.username,
       email: user.email,
       name: user.name,
-      role: user.role
+      role: sessionRole
     }
 
     return NextResponse.json({

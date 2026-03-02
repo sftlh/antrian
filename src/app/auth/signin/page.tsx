@@ -18,12 +18,13 @@ export default function SignIn() {
     setError('')
 
     try {
-      const success = await login(username, password)
+      const result = await login(username, password)
 
-      if (success) {
-        // Redirect based on role - we'll get this from the auth context
-        // For now, redirect to receptionist dashboard
-        router.push('/dashboard/receptionist')
+      if (result.success) {
+        // Redirect to central router based on role which is handled by homepage or layouts
+        router.push('/')
+      } else if (result.requiresRoleSelection) {
+        setError('Akun ini memiliki lebih dari 1 role. Silakan login melalui halaman utama.')
       } else {
         setError('Invalid credentials')
       }

@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (!['HELPDESK', 'TPT', 'BOTH'].includes(serviceType)) {
+    if (!['HELPDESK', 'TPT', 'BOTH', 'SPT_TAHUNAN_OP', 'SPT_TAHUNAN_BADAN'].includes(serviceType)) {
       return NextResponse.json(
         { error: 'Invalid service type' },
         { status: 400 }

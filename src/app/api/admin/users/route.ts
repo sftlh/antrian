@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         email: true,
         name: true,
         role: true,
+        additionalRoles: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const { username, email, name, role, password } = await request.json()
+    const { username, email, name, role, additionalRoles, password } = await request.json()
 
     if (!username || !email || !name || !role || !password) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 })
@@ -86,6 +87,7 @@ export async function POST(request: NextRequest) {
         email,
         name,
         role,
+        additionalRoles: additionalRoles || [],
         password: hashedPassword,
         isActive: true,
       },
@@ -95,6 +97,7 @@ export async function POST(request: NextRequest) {
         email: true,
         name: true,
         role: true,
+        additionalRoles: true,
         isActive: true,
         createdAt: true,
       },
@@ -122,7 +125,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const { userId, username, email, name, role, password } = await request.json()
+    const { userId, username, email, name, role, additionalRoles, password } = await request.json()
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
@@ -155,6 +158,10 @@ export async function PUT(request: NextRequest) {
       email,
       name,
       role,
+    }
+
+    if (additionalRoles !== undefined) {
+      updateData.additionalRoles = additionalRoles
     }
 
     // Only update password if provided

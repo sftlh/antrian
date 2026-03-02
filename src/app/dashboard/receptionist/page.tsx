@@ -42,7 +42,7 @@ export default function ReceptionistDashboard() {
     interests: '',
     phone: '',
     email: '',
-    serviceType: 'HELPDESK' as 'HELPDESK' | 'TPT' | 'BOTH',
+    serviceType: 'HELPDESK' as any,
     serviceOrder: 'HELPDESK_FIRST' as 'HELPDESK_FIRST' | 'TPT_FIRST',
     contact: {
       name: '',
@@ -912,6 +912,8 @@ export default function ReceptionistDashboard() {
                     <option value="HELPDESK">Helpdesk - Bantuan Teknis</option>
                     <option value="TPT">TPT - Teknisi Pelayanan Teknis</option>
                     <option value="BOTH">Keduanya - Helpdesk & TPT</option>
+                    <option value="SPT_TAHUNAN_OP">Petugas SPT - Tahunan OP</option>
+                    <option value="SPT_TAHUNAN_BADAN">Petugas SPT - Tahunan Badan</option>
                   </select>
                   {validationErrors.serviceType && (
                     <p className="mt-1 text-sm text-red-600">{validationErrors.serviceType}</p>
@@ -1093,7 +1095,7 @@ export default function ReceptionistDashboard() {
                             <div className={`px-2 py-1 text-xs rounded ${queue.priorityLevel === 'URGENT' ? 'bg-red-100 text-red-800' : queue.priorityLevel === 'HIGH' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
                               {queue.priorityLevel === 'URGENT' ? 'MENDESAK' : queue.priorityLevel === 'HIGH' ? 'TINGGI' : 'NORMAL'}
                             </div>
-                            <div className={`px-2 py-1 text-xs rounded ${queue.serviceType === 'HELPDESK' ? 'bg-green-100 text-green-800' : queue.serviceType === 'TPT' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                            <div className={`px-2 py-1 text-xs rounded ${queue.serviceType === 'HELPDESK' ? 'bg-green-100 text-green-800' : queue.serviceType === 'TPT' ? 'bg-purple-100 text-purple-800' : queue.serviceType.startsWith('SPT') ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'}`}>
                               {queue.serviceType}
                             </div>
                             <div className={`px-2 py-1 text-xs rounded ${queue.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>
@@ -1153,6 +1155,8 @@ export default function ReceptionistDashboard() {
                             <option value="HELPDESK">Helpdesk</option>
                             <option value="TPT">TPT</option>
                             <option value="BOTH">Both</option>
+                            <option value="SPT_TAHUNAN_OP">SPT Tahunan OP</option>
+                            <option value="SPT_TAHUNAN_BADAN">SPT Tahunan Badan</option>
                           </select>
                         </div>
                       </div>

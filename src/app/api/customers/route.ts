@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
         // Get or create counter for the service type
         let counter = await tx.queueCounter.findFirst({
           where: {
-            serviceType: serviceType as 'HELPDESK' | 'TPT',
+            serviceType: serviceType as any,
             date: today
           }
         })
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
           // Calculate starting number from existing queues
           const maxQueue = await tx.queue.findFirst({
             where: {
-              serviceType: serviceType as 'HELPDESK' | 'TPT',
+              serviceType: serviceType as any,
               createdAt: {
                 gte: today,
                 lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
 
           counter = await tx.queueCounter.create({
             data: {
-              serviceType: serviceType as 'HELPDESK' | 'TPT',
+              serviceType: serviceType as any,
               date: today,
               currentNumber: startingNumber
             }
@@ -211,15 +211,18 @@ export async function POST(request: NextRequest) {
           })
         }
 
-        // Generate queue number (e.g., H001, T001)
-        const prefix = serviceType === 'HELPDESK' ? 'H' : 'T'
+        // Generate queue number (e.g., H001, T001, O001, B001)
+        let prefix = 'H';
+        if (serviceType === 'TPT') prefix = 'T';
+        else if (serviceType === 'SPT_TAHUNAN_OP') prefix = 'O';
+        else if (serviceType === 'SPT_TAHUNAN_BADAN') prefix = 'B';
         const queueNumber = `${prefix}${counter.currentNumber.toString().padStart(3, '0')}`
 
         // Create queue entry within the same transaction
         const queue = await tx.queue.create({
           data: {
             queueNumber,
-            serviceType: serviceType as 'HELPDESK' | 'TPT',
+            serviceType: serviceType as any,
             status: 'WAITING',
             customerId: customer.id,
             serviceOrder: null,

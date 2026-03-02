@@ -17,12 +17,15 @@ enum UserRole {
   HELPDESK
   TPT
   KEPALA_SEKSI
+  PETUGAS_SPT
 }
 
 enum ServiceType {
   HELPDESK
   TPT
   BOTH
+  SPT_TAHUNAN_OP
+  SPT_TAHUNAN_BADAN
 }
 
 enum ServiceOrder {
@@ -65,6 +68,7 @@ model User {
   password  String
   name      String
   role      UserRole
+  additionalRoles UserRole[] @default([])
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

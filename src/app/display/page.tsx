@@ -45,8 +45,8 @@ export default function DisplayPage() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking')
   const [isFullscreen, setIsFullscreen] = useState(false)
   
-  // Audio state
-  const [isMuted, setIsMuted] = useState(true)
+  // Audio state - start unmuted
+  const [isMuted, setIsMuted] = useState(false)
   const announcedRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
@@ -364,7 +364,7 @@ export default function DisplayPage() {
           </div>
 
           {/* Current Queues */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1 min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0">
             {/* Helpdesk Queues */}
             <div className="flex flex-col min-h-0 bg-white rounded-xl border border-blue-100 shadow-sm overflow-hidden">
               <div className="bg-blue-50/80 px-6 py-4 border-b border-blue-100 flex justify-between items-center backdrop-blur-sm">
@@ -432,6 +432,56 @@ export default function DisplayPage() {
                 )}
               </div>
             </div>
+
+              {/* Petugas SPT Queues */}
+              <div className="flex flex-col min-h-0 bg-white rounded-xl border border-orange-100 shadow-sm overflow-hidden">
+                <div className="bg-orange-50/80 px-6 py-4 border-b border-orange-100 flex justify-between items-center backdrop-blur-sm">
+                  <h3 className="text-xl font-bold text-orange-800 flex items-center">
+                    <span className="w-3 h-8 bg-orange-500 rounded-full mr-3"></span>
+                    Petugas SPT
+                  </h3>
+                  <span className="bg-orange-200 text-orange-800 text-xs font-bold px-3 py-1 rounded-full">
+                    {queues.filter(q => q.serviceType.startsWith('SPT') && q.status !== 'COMPLETED').length} Antrian
+                  </span>
+                </div>
+                <div className="p-4 overflow-y-auto flex-1 space-y-3 custom-scrollbar">
+                  {queues.filter(q => q.serviceType.startsWith('SPT') && q.status !== 'COMPLETED').length > 0 ? (
+                    queues.filter(q => q.serviceType.startsWith('SPT') && q.status !== 'COMPLETED').map((queue) => (
+                      <div key={queue.id} className={`flex items-center justify-between p-5 rounded-xl border-l-4 shadow-sm transition-all hover:shadow-md ${
+                          queue.status === 'CALLED' ? 'bg-orange-50 border-orange-500 ring-1 ring-orange-500/20' :
+                          queue.status === 'IN_PROGRESS' ? 'bg-green-50 border-green-500' : 'bg-gray-50 border-gray-300'
+                        }`}>
+                        <div>
+                          <div className="text-4xl font-bold text-gray-900 tracking-tight">
+                            {queue.queueNumber}
+                          </div>
+                          <div className="text-sm font-medium text-gray-500 mt-1 uppercase tracking-wide">
+                            {queue.serviceType === 'SPT_TAHUNAN_OP' ? 'Tahunan OP' : 'Tahunan Badan'}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`inline-flex px-3 py-1.5 rounded-lg text-sm font-bold uppercase tracking-wider ${
+                              queue.status === 'CALLED' ? 'bg-orange-600 text-white animate-pulse' :
+                              queue.status === 'IN_PROGRESS' ? 'bg-green-100 text-green-800 border-green-200' :
+                              'bg-gray-200 text-gray-700 border-gray-300'
+                            }`}>
+                            {queue.status === 'CALLED' ? 'DIPANGGIL' : queue.status === 'IN_PROGRESS' ? 'DILAYANI' : 'MENUNGGU'}
+                          </div>
+                          {queue.counter && queue.status !== 'WAITING' && (
+                            <div className="mt-2 text-sm font-bold text-gray-800 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
+                              LOKET {queue.counter}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-48 text-gray-400 bg-gray-50/50 rounded-xl border-2 border-dashed border-gray-200">
+                      <p className="text-lg font-medium">Tidak ada antrian SPT</p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
             {/* TPT Queues */}
             <div className="flex flex-col min-h-0 bg-white rounded-xl border border-purple-100 shadow-sm overflow-hidden">

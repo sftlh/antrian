@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -165,6 +165,8 @@ export default function SelfQueuePage() {
     switch (type) {
       case 'HELPDESK': return 'Helpdesk'
       case 'TPT': return 'TPT (Tempat Pelayanan Terpadu)'
+        case 'SPT_TAHUNAN_OP': return 'SPT Tahunan OP'
+        case 'SPT_TAHUNAN_BADAN': return 'SPT Tahunan Badan'
       case 'BOTH': 
         // For display purposes, show the first service
         return serviceOrder === 'TPT_FIRST' ? 'TPT (Tempat Pelayanan Terpadu)' : 'Helpdesk'
@@ -228,7 +230,7 @@ export default function SelfQueuePage() {
                 </p>
                 {queue.serviceOrder && (
                   <p className={`text-xs mt-1 ${queue.isPlaceholder ? 'text-gray-300' : 'text-blue-100'}`}>
-                    Layanan pertama dari urutan {queue.serviceOrder === 'HELPDESK_FIRST' ? 'Helpdesk → TPT' : 'TPT → Helpdesk'}
+                    Layanan pertama dari urutan {queue.serviceOrder === 'HELPDESK_FIRST' ? 'Helpdesk â†’ TPT' : 'TPT â†’ Helpdesk'}
                   </p>
                 )}
               </div>
@@ -238,23 +240,23 @@ export default function SelfQueuePage() {
               <h3 className="font-semibold text-gray-900 mb-3">Petunjuk:</h3>
               <ul className="text-left text-gray-700 space-y-2 text-sm">
                 <li className="flex items-start">
-                  <span className="text-blue-600 mr-2">•</span>
+                  <span className="text-blue-600 mr-2">â€¢</span>
                   <span>Harap tunggu nomor antrian pertama Anda dipanggil</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-600 mr-2">•</span>
+                  <span className="text-blue-600 mr-2">â€¢</span>
                   <span>Pantau layar display untuk melihat nomor antrian yang sedang dilayani</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-600 mr-2">•</span>
+                  <span className="text-blue-600 mr-2">â€¢</span>
                   <span>Jika nomor pertama Anda dipanggil, segera menuju ke loket yang ditunjuk</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-600 mr-2">•</span>
+                  <span className="text-blue-600 mr-2">â€¢</span>
                   <span>Setelah layanan pertama selesai, antrian akan otomatis dilanjutkan ke layanan kedua</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-600 mr-2">•</span>
+                  <span className="text-blue-600 mr-2">â€¢</span>
                   <span>Simpan nomor antrian ini untuk referensi</span>
                 </li>
               </ul>

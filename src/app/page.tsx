@@ -10,6 +10,8 @@ export default function Home() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [requiresRoleSelection, setRequiresRoleSelection] = useState(false)
+  const [availableRoles, setAvailableRoles] = useState<string[]>([])
   const { login, user, isLoading } = useAuth()
   const router = useRouter()
 
@@ -32,6 +34,9 @@ export default function Home() {
         case 'KEPALA_SEKSI':
           router.push('/dashboard/kepala-seksi')
           break
+        case 'PETUGAS_SPT':
+          router.push('/dashboard/petugas-spt')
+          break
         default:
           router.push('/dashboard')
       }
@@ -44,14 +49,32 @@ export default function Home() {
     setError('')
 
     try {
-      const success = await login(username, password)
+      const result = await login(username, password)
 
-      if (!success) {
-        setError('Username atau password salah')
+      if (result.requiresRoleSelection) {
+        setRequiresRoleSelection(true)
+        setAvailableRoles(result.availableRoles || [])
+      } else if (!result.success) {
+        setError(result.error || 'Username atau password salah')
       }
       // Redirect will happen via useEffect when user state updates
     } catch (err) {
       setError('Terjadi kesalahan saat login')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRoleSelect = async (role: string) => {
+    setLoading(true)
+    setError('')
+    try {
+      const result = await login(username, password, role)
+      if (!result.success) {
+        setError(result.error || 'Gagal memilih role')
+      }
+    } catch (err) {
+      setError('Terjadi kesalahan saat memilih role')
     } finally {
       setLoading(false)
     }
@@ -109,6 +132,54 @@ export default function Home() {
 
           {/* Form */}
           <div className="px-8 pb-10">
+            {requiresRoleSelection ? (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="text-center mb-6">
+                  <p className="text-sm font-medium text-slate-500 mb-1">Berhasil Masuk</p>
+                  <h3 className="text-lg font-bold text-slate-800">Pilih Peran Anda</h3>
+                </div>
+                
+                {error && (
+                  <div className="flex items-center p-3 text-sm text-red-600 bg-red-50 rounded-xl border border-red-100 mb-4">
+                    <div className="h-2 w-2 bg-red-500 rounded-full mr-3 shrink-0"></div>
+                    {error}
+                  </div>
+                )}
+
+                <div className="grid gap-3">
+                  {availableRoles.map((r) => (
+                    <button
+                      key={r}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleRoleSelect(r);
+                      }}
+                      disabled={loading}
+                      className="w-full relative flex items-center justify-between py-3.5 px-5 border border-emerald-100 rounded-xl bg-emerald-50/30 hover:bg-emerald-50 hover:border-emerald-200 text-emerald-800 font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed group overflow-hidden"
+                    >
+                      <span className="flex items-center">
+                        <User className="w-5 h-5 mr-3 text-emerald-500 opacity-70" />
+                        {r.replace(/_/g, ' ')}
+                      </span>
+                      <ArrowRight className="w-5 h-5 text-emerald-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-4 transition-all" />
+                    </button>
+                  ))}
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setRequiresRoleSelection(false);
+                    setPassword('');
+                  }}
+                  disabled={loading}
+                  className="w-full mt-6 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                >
+                  Kembali ke Login
+                </button>
+              </div>
+            ) : (
             <form className="space-y-5" onSubmit={handleSubmit}>
               <div className="space-y-4">
                 <div className="group">
@@ -179,8 +250,9 @@ export default function Home() {
                 )}
               </button>
             </form>
+            )}
           </div>
-          
+
           {/* Footer Decor */}
           <div className="bg-slate-50/50 border-t border-slate-100 p-4 text-center">
              <p className="text-xs text-slate-400">

@@ -10,7 +10,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null
-  login: (username: string, password: string) => Promise<boolean>
+  login: (username: string, password: string, selectedRole?: string) => Promise<{success: boolean; requiresRoleSelection?: boolean; availableRoles?: string[]; error?: string}>
   logout: () => void
   isLoading: boolean
 }
@@ -48,28 +48,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string, selectedRole?: string): Promise<{success: boolean; requiresRoleSelection?: boolean; availableRoles?: string[]; error?: string}> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, selectedRole }),
       })
 
       const data = await response.json()
 
-      if (response.ok && data.token) {
-        localStorage.setItem('auth_token', data.token)
-        setUser(data.user)
-        return true
+      if (response.ok) {
+        if (data.requiresRoleSelection) {
+          return { success: false, requiresRoleSelection: true, availableRoles: data.availableRoles }
+        }
+
+        if (data.token) {
+          localStorage.setItem('auth_token', data.token)
+          setUser(data.user)
+          return { success: true }
+        }
       }
 
-      return false
+      return { success: false, error: data.error || 'Login failed' }
     } catch (error) {
       console.error('Login error:', error)
-      return false
+      return { success: false, error: 'Network error occurred' }
     }
   }
 
